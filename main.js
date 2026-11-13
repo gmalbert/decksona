@@ -48,12 +48,14 @@ async function command(name, args = {}) {
 function createWindow() {
   playerWindow = new BrowserWindow({
     width: 930, height: 690, minWidth: 530, minHeight: 320,
-    backgroundColor: '#151a20', title: 'Music Assistant Retro Player',
+    backgroundColor: '#151a20', title: 'Decksona', icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   playerWindow.loadFile('index.html');
   playerWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 }
+
+app.setName('Decksona');
 
 app.whenReady().then(() => {
   loadSettings();

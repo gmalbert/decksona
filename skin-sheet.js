@@ -13,7 +13,7 @@ const parts = [`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height=
   `<pattern id="grid" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M14 0H0V14" fill="none" stroke="#fff" stroke-opacity=".16"/></pattern>`,
   `<pattern id="diagonal" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V12" stroke="#fff" stroke-opacity=".19"/></pattern>`,
   `<pattern id="carbon" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 0L12 12M12 0L0 12" stroke="#fff" stroke-opacity=".14"/></pattern></defs>`,
-  `<rect width="${width}" height="${height}" fill="#0b1014"/><text x="28" y="36" fill="#e8f3f3" font-family="Arial" font-size="23" font-weight="bold">MA/PLAYER · 36 SKINS</text><text x="28" y="57" fill="#94aab0" font-family="Arial" font-size="12">Six palettes × six surface overlays</text>`];
+  `<rect width="${width}" height="${height}" fill="#0b1014"/><text x="28" y="36" fill="#e8f3f3" font-family="Arial" font-size="23" font-weight="bold">DECKSONA · 36 SKINS</text><text x="28" y="57" fill="#94aab0" font-family="Arial" font-size="12">Six palettes × six surface overlays</text>`];
 
 THEMES.forEach((theme, index) => {
   const col = index % 6;

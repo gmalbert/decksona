@@ -1,5 +1,5 @@
 {
-  "name": "music-assistant-retro-player",
+  "name": "decksona",
   "version": "0.1.0",
   "private": true,
   "main": "main.js",
@@ -14,10 +14,27 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "io.musicassistant.retroplayer",
-    "productName": "Music Assistant Retro Player",
-    "files": ["main.js", "preload.js", "renderer.js", "index.html", "style.css", "api.js", "themes.js"],
-    "win": { "target": "nsis" },
-    "mac": { "target": "dmg", "category": "public.app-category.music" }
-  }
+    "appId": "com.decksona.player",
+    "productName": "Decksona",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "style.css",
+      "api.js",
+      "themes.js",
+      "assets/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.music",
+      "icon": "assets/icon.icns"
+    }
+  },
+  "description": "A retro desktop player for Music Assistant"
 }
