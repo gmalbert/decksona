@@ -106,7 +106,8 @@ function renderPlayer() {
   $('connectionStatus').textContent = state.connected ? '● CONNECTED' : '● OFFLINE';
   $('connectionStatus').classList.toggle('online', state.connected);
   const playing = queue?.state === 'playing';
-  $('playPauseIcon').textContent = playing ? 'Ⅱ' : '▶';
+  $('playPauseIcon').textContent = playing ? '' : '▶';
+  $('playPauseIcon').classList.toggle('is-paused', playing);
   $('playPause').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   for (const id of ['rewind', 'fastForward']) $(id).disabled = !queue?.active || !queue?.current_item?.duration;
   document.querySelector('.shell').classList.toggle('playing', queue?.state === 'playing');
