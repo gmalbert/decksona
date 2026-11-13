@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <title>Music Assistant Retro Player</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="titlebar">
+      <div class="brand"><span class="brand-mark">▰▰▰</span><span>MA<span class="brand-light">/PLAYER</span></span></div>
+      <span class="version">DESKTOP AUDIO SYSTEM · 0.1</span>
+      <div class="header-actions"><button id="libraryToggle" class="top-button panel-toggle" aria-pressed="true">LIBRARY</button><button id="queueToggle" class="top-button panel-toggle" aria-pressed="true">QUEUE</button><button id="compactToggle" class="top-button" aria-pressed="false">COMPACT</button><button id="themesButton" class="top-button">SKINS</button><button id="settingsButton" class="top-button" aria-label="Connection settings">⚙ SETTINGS</button></div>
+    </header>
+
+    <section class="deck" aria-label="Player controls">
+      <div class="deck-top"><span class="section-label">NOW PLAYING</span><span id="connectionStatus" class="status">● OFFLINE</span></div>
+      <div class="display-row">
+        <div class="time-block"><span id="timeDisplay">00:00</span><small>ELAPSED</small></div>
+        <div class="track-block"><div id="trackTitle" class="track-title">NOT CONNECTED</div><div id="trackArtist" class="track-artist">Connect to your Music Assistant server</div><div class="signal"><span class="signal-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="trackMeta">MA DIGITAL AUDIO</span></div></div>
+        <div class="duration-block"><span id="durationDisplay">00:00</span><small>TOTAL</small></div>
+      </div>
+      <div class="seek-row"><input id="seek" type="range" min="0" max="100" value="0" aria-label="Seek position"><span id="seekPercent">0%</span></div>
+      <div class="control-row">
+        <div class="transport"><button id="previous" title="Previous track (←)" aria-label="Previous track"><span class="transport-icon">|◀</span></button><button id="rewind" title="Rewind 10 seconds (Shift+←)" aria-label="Rewind 10 seconds"><span class="transport-icon">◀◀</span></button><button id="playPause" class="primary" title="Play or pause (Space)" aria-label="Play or pause"><span id="playPauseIcon" class="transport-icon">▶</span></button><button id="stop" title="Stop" aria-label="Stop"><span class="transport-icon">■</span></button><button id="fastForward" title="Fast-forward 10 seconds (Shift+→)" aria-label="Fast-forward 10 seconds"><span class="transport-icon">▶▶</span></button><button id="next" title="Next track (→)" aria-label="Next track"><span class="transport-icon">▶|</span></button></div>
+        <div class="modes"><button id="shuffle" class="mode" aria-pressed="false">SHUFFLE</button><button id="repeat" class="mode" aria-label="Repeat mode">REPEAT OFF</button></div>
+      </div>
+      <div class="output-row"><label for="playerSelect">OUTPUT</label><select id="playerSelect" aria-label="Music Assistant output device"><option value="">Select an output</option></select><label for="volume">VOL</label><input id="volume" type="range" min="0" max="100" value="50" aria-label="Volume"><span id="volumeValue">50</span></div>
+    </section>
+
+    <section class="workspace">
+      <div id="libraryPanel" class="panel library-panel">
+        <div class="panel-heading"><span>LIBRARY SEARCH</span><span class="tiny">TRACKS · ALBUMS · PLAYLISTS</span></div>
+        <form id="searchForm" class="search"><input id="searchInput" type="search" placeholder="Search your Music Assistant library…" autocomplete="off" aria-label="Search music"><button type="submit">FIND</button></form>
+        <div class="list-head"><span>TITLE / ARTIST</span><span>TYPE</span></div>
+        <div id="results" class="list results"><div class="empty">Search for music to begin.</div></div>
+        <div class="panel-footer">Double-click to play · <span class="accent">＋</span> adds to queue</div>
+      </div>
+      <div id="queuePanel" class="panel queue-panel">
+        <div class="panel-heading"><span>PLAYLIST EDITOR</span><span id="queueCount" class="tiny">0 ITEMS</span></div>
+        <div class="list-head"><span>UP NEXT</span><span>TIME</span></div>
+        <div id="queue" class="list queue"><div class="empty">Your queue will appear here.</div></div>
+        <div class="panel-footer">Double-click an item to play it</div>
+      </div>
+    </section>
+    <footer class="footer"><span id="message">READY</span><span>POWERED BY MUSIC ASSISTANT</span></footer>
+  </main>
+
+  <dialog id="settingsDialog">
+    <form id="settingsForm" method="dialog">
+      <div class="dialog-title"><span>CONNECT TO MUSIC ASSISTANT</span><button id="closeSettings" type="button" aria-label="Close">✕</button></div>
+      <p>Enter your server address and a long-lived access token from Music Assistant → Settings → Profile.</p>
+      <label for="serverUrl">SERVER URL</label><input id="serverUrl" type="url" placeholder="http://192.168.1.100:8095" required>
+      <label for="token">ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off">
+      <small id="tokenHint">The token is encrypted when the operating system supports secure storage.</small>
+      <div class="dialog-actions"><button type="submit">CONNECT</button></div>
+    </form>
+  </dialog>
+  <dialog id="themesDialog" class="themes-dialog">
+    <div class="dialog-title"><span>PLAYER SKINS <small id="themeCount"></small></span><button id="closeThemes" type="button" aria-label="Close skins">✕</button></div>
+    <p>Choose a color palette and surface overlay. Your selection is saved for this computer.</p>
+    <div id="themeGrid" class="theme-grid"></div>
+  </dialog>
+  <script src="themes.js"></script>
+  <script src="preview-data.js"></script><script src="renderer.js"></script>
+</body>
+</html>
+

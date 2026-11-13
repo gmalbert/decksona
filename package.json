@@ -1,0 +1,23 @@
+{
+  "name": "music-assistant-retro-player",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --test tests/*.test.js",
+    "dist:win": "electron-builder --win nsis",
+    "dist:mac": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "io.musicassistant.retroplayer",
+    "productName": "Music Assistant Retro Player",
+    "files": ["main.js", "preload.js", "renderer.js", "index.html", "style.css", "api.js", "themes.js"],
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg", "category": "public.app-category.music" }
+  }
+}
