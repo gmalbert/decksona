@@ -1,7 +1,16 @@
 const $ = id => document.getElementById(id);
 const state = { connected: false, playerId: '', players: [], queues: [], items: [], results: [], queue: null, player: null, searching: false, refreshing: false };
-const layout = { compact: false, library: true, queue: true };
+const layout = { compact: false, mini: false, library: true, queue: true };
+let beforeMiniCompact = false;
+let draggedQueueItem = null;
+let movingQueueItem = false;
+let seeking = false;
+const searchTypes = new Set(['track', 'album', 'playlist', 'artist']);
+let searchRevision = 0;
+const browseHistory = [];
+let browseLabel = '';
 let selectedThemeId = 'phosphor-glass';
+const artworkCache = new Map();
 
 function applyTheme(themeId) {
   const theme = THEMES.find(item => item.id === themeId) || THEMES[0];
@@ -59,6 +68,7 @@ function renderLayout() {
   workspace.hidden = !libraryVisible && !queueVisible;
   workspace.classList.toggle('single-panel', libraryVisible !== queueVisible);
   document.querySelector('.shell').classList.toggle('compact', layout.compact);
+  document.querySelector('.shell').classList.toggle('mini', layout.mini);
   $('compactToggle').textContent = layout.compact ? 'EXPAND' : 'COMPACT';
   $('compactToggle').setAttribute('aria-pressed', String(layout.compact));
   for (const [id, visible] of [['libraryToggle', layout.library], ['queueToggle', layout.queue]]) {
@@ -70,6 +80,11 @@ function renderLayout() {
 function message(text, error = false) {
   $('message').textContent = (error ? 'ERROR · ' : '') + text;
   $('message').style.color = error ? '#f1a594' : '#95cbaa';
+  const settingsError = $('settingsError');
+  if (settingsError) {
+    settingsError.textContent = error ? text : '';
+    settingsError.hidden = !error;
+  }
 }
 function time(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
@@ -77,10 +92,69 @@ function time(seconds) {
   return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 }
 function artist(item) {
+  return creditedArtists(item).map(entry => entry.name).join(', ') || 'Unknown artist';
+}
+function creditedArtists(item) {
   const media = item?.media_item || item;
-  return (media?.artists || []).map(a => typeof a === 'string' ? a : a.name).filter(Boolean).join(', ') || media?.artist?.name || media?.album?.name || 'Unknown artist';
+  const known = value => value && !/^\[?unknown(?: artist)?\]?$/i.test(value.trim());
+  const entries = (media?.artists || []).map(entry => typeof entry === 'string' ? { name: entry } : entry).filter(entry => known(entry?.name));
+  if (entries.length) return entries;
+  if (known(media?.artist?.name)) return [media.artist];
+  // Some sources put "Artist - Track" in the title while leaving artist tags unknown.
+  const name = String(media?.name || item?.name || '').replace(/^\[unknown\]\s*-\s*/i, '');
+  const separator = name.indexOf(' - ');
+  return separator > 0 && known(name.slice(0, separator)) ? [{ name: name.slice(0, separator), inferred: true }] : [];
+}
+function album(item) {
+  const media = item?.media_item || item;
+  return typeof media?.album === 'string' ? media.album : media?.album?.name || media?.album_name || '';
+}
+function artworkInfo(item) {
+  const media = item?.media_item || item;
+  const images = media?.metadata?.images || media?.images || [];
+  const albumImages = media?.album?.metadata?.images || [];
+  const candidates = [...(Array.isArray(images) ? images : []), ...(Array.isArray(albumImages) ? albumImages : [])];
+  const image = candidates.find(entry => entry?.type === 'thumb' && entry.proxy_id)
+    || candidates.find(entry => entry?.proxy_id || (entry?.provider && entry?.path));
+  const ids = media?.album?.external_ids || [];
+  const releaseGroup = ids.find(entry => entry[0] === 'musicbrainz_releasegroupid')?.[1];
+  const release = ids.find(entry => entry[0] === 'musicbrainz_albumid')?.[1];
+  return item?.image || image || (releaseGroup ? { releaseGroup } : release ? { release }
+    : album(item) && artist(item) !== 'Unknown artist' ? { album: album(item), artist: artist(item) } : null);
+}
+async function loadArtwork(img, item) {
+  const image = artworkInfo(item);
+  const media = item?.media_item || item;
+  const artists = creditedArtists(item);
+  if (!image && !artists.length) { img.dataset.artworkKey = ''; img.hidden = true; img.removeAttribute('src'); $('artworkCredit').hidden = true; return; }
+  const key = JSON.stringify({ image, artists });
+  if (img.dataset.artworkKey !== key) { img.hidden = true; $('artworkCredit').hidden = true; }
+  img.dataset.artworkKey = key;
+  try {
+    let pending = artworkCache.get(key);
+    if (!pending) {
+      pending = (async () => {
+        const src = image ? await window.retro.image(image) : null;
+        if (src) return { src, alt: 'Album cover', title: 'Album cover · Toggle ultra-small player' };
+        const portrait = artists.length ? await window.retro.artistImage(artists) : null;
+        return portrait ? { src: portrait.src, source: portrait.source, alt: `${portrait.artist || 'Artist'} picture`, title: `Artist picture: ${portrait.artist || 'Unknown artist'} · Toggle ultra-small player` } : null;
+      })();
+      artworkCache.set(key, pending);
+    }
+    const artwork = await pending;
+    if (img.isConnected && img.dataset.artworkKey === key) {
+      if (artwork) { img.src = artwork.src; img.alt = artwork.alt; img.title = artwork.title; img.hidden = false; }
+      else { img.hidden = true; img.removeAttribute('src'); }
+      $('artworkCredit').hidden = !artwork?.source;
+      $('artworkCredit').dataset.source = artwork?.source || '';
+    }
+  } catch { if (img.dataset.artworkKey === key) { img.hidden = true; $('artworkCredit').hidden = true; } }
 }
 function title(item) { return item?.name || item?.media_item?.name || 'Unknown title'; }
+function duration(item) {
+  return [item?.duration, item?.media_item?.duration, item?.streamdetails?.duration]
+    .map(Number).find(value => Number.isFinite(value) && value > 0) || 0;
+}
 function currentElapsed() {
   const queue = state.queue;
   if (!queue) return 0;
@@ -89,17 +163,18 @@ function currentElapsed() {
   return Math.max(0, elapsed + (queue.state === 'playing' && updated ? Math.max(0, Date.now() / 1000 - updated) : 0));
 }
 function renderProgress() {
-  const duration = Number(state.queue?.current_item?.duration) || 0;
-  const elapsed = Math.min(duration || Infinity, currentElapsed());
+  const total = duration(state.queue?.current_item);
+  const elapsed = Math.min(total || Infinity, currentElapsed());
   $('timeDisplay').textContent = time(elapsed);
-  $('durationDisplay').textContent = time(duration);
-  if (document.activeElement !== $('seek')) $('seek').value = duration ? Math.round(elapsed / duration * 100) : 0;
+  $('durationDisplay').textContent = total ? time(total) : '--:--';
+  if (!seeking) $('seek').value = total ? Math.round(elapsed / total * 100) : 0;
   $('seekPercent').textContent = `${$('seek').value}%`;
-  $('seek').disabled = !duration || !state.queue?.active;
+  $('seek').disabled = !total || !state.queue?.active;
 }
 function renderPlayer() {
   const queue = state.queue;
   const current = queue?.current_item;
+  loadArtwork($('nowPlayingArt'), current);
   $('trackTitle').textContent = current ? title(current).toUpperCase() : (state.connected ? 'NOTHING PLAYING' : 'NOT CONNECTED');
   $('trackArtist').textContent = current ? artist(current) : (state.connected ? 'Search your library and press play' : 'Connect to your Music Assistant server');
   $('trackMeta').textContent = current?.media_item?.album?.name || 'MA DIGITAL AUDIO';
@@ -109,7 +184,7 @@ function renderPlayer() {
   $('playPauseIcon').textContent = playing ? '' : '▶';
   $('playPauseIcon').classList.toggle('is-paused', playing);
   $('playPause').setAttribute('aria-label', playing ? 'Pause' : 'Play');
-  for (const id of ['rewind', 'fastForward']) $(id).disabled = !queue?.active || !queue?.current_item?.duration;
+  for (const id of ['rewind', 'fastForward']) $(id).disabled = !queue?.active || !duration(current);
   document.querySelector('.shell').classList.toggle('playing', queue?.state === 'playing');
   $('shuffle').classList.toggle('active', Boolean(queue?.shuffle_enabled));
   $('shuffle').setAttribute('aria-pressed', String(Boolean(queue?.shuffle_enabled)));
@@ -140,20 +215,72 @@ function makeRow(item, index, kind) {
   const number = document.createElement('span'); number.className = 'row-index'; number.textContent = String(index + 1).padStart(2, '0');
   const info = document.createElement('div'); info.className = 'row-info';
   const name = document.createElement('span'); name.className = 'row-name'; name.textContent = title(item);
-  const sub = document.createElement('span'); sub.className = 'row-sub'; sub.textContent = artist(item);
+  const sub = document.createElement('span'); sub.className = 'row-sub';
+  const artistName = artist(item);
+  const albumName = album(item);
+  sub.textContent = item.media_type === 'artist' ? 'View albums' : albumName ? `${artistName} · ${albumName}` : artistName;
   info.append(name, sub);
-  const detail = document.createElement('span'); detail.className = 'row-type'; detail.textContent = kind === 'results' ? String(item.media_type || 'track').toUpperCase() : time(item.duration);
+  const detail = document.createElement('span'); detail.className = 'row-type'; detail.textContent = kind === 'results' ? String(item.media_type || 'track').toUpperCase() : duration(item) ? time(duration(item)) : '--:--';
   row.append(number, info, detail);
   if (kind === 'results') {
-    const add = document.createElement('button'); add.className = 'row-action'; add.textContent = '+'; add.title = 'Add to queue'; add.setAttribute('aria-label', `Add ${title(item)} to queue`);
-    add.addEventListener('click', event => { event.stopPropagation(); playMedia(item, 'add'); });
-    row.append(add);
-    row.addEventListener('dblclick', () => playMedia(item, 'replace'));
+    const browse = item.media_type === 'artist' || item.media_type === 'album';
+    if (item.media_type !== 'artist') {
+      const add = document.createElement('button'); add.className = 'row-action'; add.textContent = '+'; add.title = 'Add to queue'; add.setAttribute('aria-label', `Add ${title(item)} to queue`);
+      add.addEventListener('click', event => { event.stopPropagation(); playMedia(item, 'add'); });
+      add.addEventListener('dblclick', event => event.stopPropagation());
+      row.append(add);
+    }
+    if (browse) {
+      const open = document.createElement('button'); open.className = 'row-action'; open.textContent = '›'; open.title = item.media_type === 'artist' ? 'View albums' : 'View songs'; open.setAttribute('aria-label', `${open.title}: ${title(item)}`);
+      open.addEventListener('click', event => { event.stopPropagation(); browseItem(item); });
+      row.append(open);
+      row.addEventListener('click', event => { if (event.detail === 1) browseItem(item); });
+      row.addEventListener('keydown', event => { if (event.target === row && event.key === 'Enter') { event.preventDefault(); browseItem(item); } });
+    } else row.addEventListener('dblclick', () => playMedia(item, 'replace'));
   } else {
+    const firstMovable = firstMovableQueueIndex(state.queue);
+    const locked = index < firstMovable;
+    row.draggable = !locked;
+    row.title = locked ? 'Already played, playing, or buffered by Music Assistant; this track cannot be moved.' : 'Drag to reorder, or use the up and down buttons';
+    row.addEventListener('dragstart', event => {
+      if (locked) { event.preventDefault(); return; }
+      draggedQueueItem = item.queue_item_id;
+      event.dataTransfer.setData('text/plain', item.queue_item_id);
+      event.dataTransfer.effectAllowed = 'move';
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragover', event => {
+      if (!draggedQueueItem || locked) return;
+      event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop-target');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
+    row.addEventListener('dragend', () => {
+      draggedQueueItem = null;
+      document.querySelectorAll('.dragging,.drop-target').forEach(node => node.classList.remove('dragging', 'drop-target'));
+    });
+    row.addEventListener('drop', event => {
+      event.preventDefault(); row.classList.remove('drop-target');
+      if (locked) { draggedQueueItem = null; return; }
+      const from = state.items.findIndex(entry => entry.queue_item_id === draggedQueueItem);
+      draggedQueueItem = null;
+      if (from >= 0 && from !== index) moveQueueItem(state.items[from], index - from);
+    });
+    const reorder = document.createElement('span'); reorder.className = 'queue-reorder';
+    for (const [label, shift] of [['↑', -1], ['↓', 1]]) {
+      const button = document.createElement('button'); button.className = 'row-action'; button.textContent = label;
+      button.title = `Move ${shift < 0 ? 'up' : 'down'}`;
+      button.setAttribute('aria-label', `${button.title}: ${title(item)}`);
+      button.disabled = locked || index + shift < firstMovable || index + shift >= state.items.length;
+      if (locked) button.title = row.title;
+      button.addEventListener('click', event => { event.stopPropagation(); moveQueueItem(item, shift); });
+      button.addEventListener('dblclick', event => event.stopPropagation());
+      reorder.append(button);
+    }
+    row.append(reorder);
     if (item.queue_item_id === state.queue?.current_item?.queue_item_id) row.classList.add('current');
     row.addEventListener('dblclick', () => act('playIndex', { queue_id: state.playerId, index: item.queue_item_id || index }));
   }
-  row.addEventListener('keydown', event => { if (event.key === 'Enter') row.dispatchEvent(new Event('dblclick')); });
+  row.addEventListener('keydown', event => { if (event.target === row && event.key === 'Enter' && !(kind === 'results' && ['artist', 'album'].includes(item.media_type))) row.dispatchEvent(new Event('dblclick')); });
   return row;
 }
 function renderList(id, items, kind, empty) {
@@ -169,7 +296,7 @@ function renderQueue() {
   renderList('queue', state.items, 'queue', state.connected ? 'The queue is empty.' : 'Your queue will appear here.');
 }
 async function refresh() {
-  if (!state.connected || state.refreshing) return;
+  if (!state.connected || state.refreshing || draggedQueueItem || movingQueueItem) return;
   state.refreshing = true;
   try {
     const [players, queues] = await Promise.all([window.retro.command('players'), window.retro.command('queues')]);
@@ -184,6 +311,7 @@ async function refresh() {
     state.items = state.queue ? await window.retro.command('items', { queue_id: state.playerId, limit: 200, offset: 0 }) : [];
     if (!Array.isArray(state.items)) state.items = [];
     renderPlayers(); renderPlayer(); renderQueue();
+    if ($('message').textContent === 'CONNECTING…') message('CONNECTED');
   } catch (error) { message(error.message, true); }
   finally { state.refreshing = false; }
 }
@@ -192,21 +320,83 @@ async function act(name, args = {}) {
   try { await window.retro.command(name, args); await refresh(); }
   catch (error) { message(error.message, true); }
 }
+async function moveQueueItem(item, shift) {
+  if (movingQueueItem || !shift || !state.playerId) return;
+  movingQueueItem = true;
+  try {
+    const queues = await window.retro.command('queues');
+    const queue = queues.find(entry => entry.queue_id === state.playerId);
+    const items = await window.retro.command('items', { queue_id: state.playerId, limit: 200, offset: 0 });
+    const index = items.findIndex(entry => entry.queue_item_id === item.queue_item_id);
+    const firstMovable = firstMovableQueueIndex(queue);
+    if (index < firstMovable || index + shift < firstMovable) {
+      message('Only upcoming tracks that are not buffered can be reordered.');
+      return;
+    }
+    if (index < 0 || index + shift >= items.length) return;
+    await window.retro.command('moveItem', { queue_id: state.playerId, queue_item_id: item.queue_item_id, pos_shift: shift });
+    message('QUEUE ORDER UPDATED');
+  } catch (error) { message(error.message, true); }
+  finally { movingQueueItem = false; await refresh(); }
+}
+function firstMovableQueueIndex(queue) {
+  if (Number.isInteger(queue?.index_in_buffer)) {
+    return Math.max(queue.index_in_buffer, queue.current_index ?? -1) + 1;
+  }
+  return Math.max(0, queue?.current_index ?? 0);
+}
 async function playMedia(item, option) {
+  if (item.media_type === 'artist') { await browseItem(item); return; }
   if (!item.uri) { message('This item has no playable URI.', true); return; }
   await act('playMedia', { queue_id: state.playerId, media: item.uri, option });
 }
+function renderBrowseNavigation() {
+  $('browseNavigation').hidden = !browseHistory.length;
+  $('browseTitle').textContent = browseLabel;
+}
+async function browseItem(item) {
+  const revision = ++searchRevision;
+  const isArtist = item.media_type === 'artist';
+  const uri = item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);
+  const itemId = item.item_id || uri?.[2];
+  const provider = item.provider || uri?.[1];
+  if (!itemId || !provider) { message('This item has no library or provider reference.', true); return; }
+  message(`LOADING ${isArtist ? 'ALBUMS' : 'SONGS'} · ${title(item)}`);
+  try {
+    const data = await window.retro.command(isArtist ? 'artistAlbums' : 'albumTracks', { item_id: String(itemId), provider_instance_id_or_domain: provider });
+    if (revision !== searchRevision) return;
+    browseHistory.push({ label: browseLabel, items: state.results });
+    browseLabel = `${title(item)} · ${isArtist ? 'ALBUMS' : 'SONGS'}`;
+    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || (isArtist ? 'album' : 'track') }));
+    renderBrowseNavigation();
+    renderList('results', state.results, 'results', isArtist ? 'No albums found for this artist.' : 'No songs found for this album.');
+    message(`${state.results.length} ${isArtist ? 'ALBUMS' : 'SONGS'}`);
+  } catch (error) { if (revision === searchRevision) message(error.message, true); }
+}
 async function search() {
+  const revision = ++searchRevision;
+  browseHistory.length = 0;
+  browseLabel = '';
+  renderBrowseNavigation();
   const query = $('searchInput').value.trim();
+  if (!searchTypes.size) {
+    state.results = [];
+    renderList('results', [], 'results', 'Select at least one search type.');
+    message('SELECT TRACKS, ALBUMS, PLAYLISTS OR ARTISTS');
+    return;
+  }
   if (!query) { state.results = []; renderList('results', [], 'results', 'Search for music to begin.'); return; }
   if (!state.connected) { message('Connect to Music Assistant first.', true); return; }
   message(`SEARCHING · ${query}`);
   try {
-    const data = await window.retro.command('search', { search_query: query, media_types: ['track', 'album', 'playlist'], limit: 30, library_only: false });
-    state.results = ['tracks', 'albums', 'playlists'].flatMap(key => Array.isArray(data?.[key]) ? data[key] : []);
+    const types = [...searchTypes];
+    const data = await window.retro.command('search', { search_query: query, media_types: types, limit: 30, library_only: false });
+    if (revision !== searchRevision) return;
+    const buckets = { track: 'tracks', album: 'albums', playlist: 'playlists', artist: 'artists' };
+    state.results = types.flatMap(type => Array.isArray(data?.[buckets[type]]) ? data[buckets[type]] : []);
     renderList('results', state.results, 'results', 'No matches found.');
     message(`${state.results.length} RESULTS`);
-  } catch (error) { message(error.message, true); }
+  } catch (error) { if (revision === searchRevision) message(error.message, true); }
 }
 async function connect() {
   try {
@@ -239,12 +429,49 @@ $('compactToggle').addEventListener('click', async () => {
   renderLayout();
   await window.retro.setCompact(layout.compact);
 });
+async function toggleMini() {
+  if (!layout.mini) {
+    beforeMiniCompact = layout.compact;
+    layout.compact = true;
+    layout.mini = true;
+  } else {
+    layout.mini = false;
+    layout.compact = beforeMiniCompact;
+  }
+  renderLayout();
+  await window.retro.setCompact(layout.mini ? 'mini' : layout.compact);
+}
+$('nowPlayingArt').addEventListener('click', toggleMini);
+$('artworkCredit').addEventListener('click', () => window.retro.openArtworkSource($('artworkCredit').dataset.source));
+$('nowPlayingArt').addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleMini(); }
+});
+$('miniBack').addEventListener('click', toggleMini);
 for (const [button, key] of [['libraryToggle', 'library'], ['queueToggle', 'queue']]) {
   $(button).addEventListener('click', () => { layout[key] = !layout[key]; renderLayout(); });
 }
 $('closeSettings').addEventListener('click', () => $('settingsDialog').close());
 $('settingsForm').addEventListener('submit', event => { event.preventDefault(); connect(); });
 $('searchForm').addEventListener('submit', event => { event.preventDefault(); search(); });
+$('browseBack').addEventListener('click', () => {
+  ++searchRevision;
+  const previous = browseHistory.pop();
+  if (!previous) return;
+  browseLabel = previous.label;
+  state.results = previous.items;
+  renderBrowseNavigation();
+  renderList('results', state.results, 'results', 'No results.');
+  message(`${state.results.length} RESULTS`);
+});
+document.querySelectorAll('[data-search-type]').forEach(button => {
+  button.addEventListener('click', () => {
+    const type = button.dataset.searchType;
+    if (searchTypes.has(type)) searchTypes.delete(type);
+    else searchTypes.add(type);
+    button.setAttribute('aria-pressed', String(searchTypes.has(type)));
+    search();
+  });
+});
 $('playerSelect').addEventListener('change', async event => { state.playerId = event.target.value; await window.retro.selectPlayer(state.playerId); await refresh(); });
 for (const [id, name] of [['previous', 'previous'], ['playPause', 'playPause'], ['stop', 'stop'], ['next', 'next']]) {
   $(id).addEventListener('click', () => act(name, { queue_id: state.playerId }));
@@ -255,7 +482,10 @@ for (const [id, seconds] of [['rewind', -10], ['fastForward', 10]]) {
 $('shuffle').addEventListener('click', () => act('shuffle', { queue_id: state.playerId, shuffle_enabled: !state.queue?.shuffle_enabled }));
 $('repeat').addEventListener('click', () => { const next = { off: 'all', all: 'one', one: 'off' }[state.queue?.repeat_mode || 'off']; act('repeat', { queue_id: state.playerId, repeat_mode: next }); });
 $('seek').addEventListener('input', () => { $('seekPercent').textContent = `${$('seek').value}%`; });
-$('seek').addEventListener('change', () => { const duration = Number(state.queue?.current_item?.duration) || 0; if (duration) act('seek', { queue_id: state.playerId, position: Math.round(duration * Number($('seek').value) / 100) }); });
+$('seek').addEventListener('pointerdown', () => { seeking = true; });
+document.addEventListener('pointerup', () => { seeking = false; });
+$('seek').addEventListener('blur', () => { seeking = false; });
+$('seek').addEventListener('change', () => { seeking = false; const total = duration(state.queue?.current_item); if (total) act('seek', { queue_id: state.playerId, position: Math.round(total * Number($('seek').value) / 100) }); });
 $('volume').addEventListener('input', () => { $('volumeValue').textContent = $('volume').value; });
 $('volume').addEventListener('change', () => act('volume', { player_id: state.playerId, volume_level: Number($('volume').value) }));
 document.addEventListener('keydown', event => {

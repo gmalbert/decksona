@@ -36,5 +36,8 @@
       "icon": "assets/icon.icns"
     }
   },
-  "description": "A retro desktop player for Music Assistant"
+  "description": "A retro desktop player for Music Assistant",
+  "allowScripts": {
+    "electron@39.8.10": true
+  }
 }
