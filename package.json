@@ -28,6 +28,7 @@
       "assets/**"
     ],
     "win": {
+      "artifactName": "Decksona.exe",
       "target": [
         {
           "target": "portable",

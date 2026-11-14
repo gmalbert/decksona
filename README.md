@@ -13,7 +13,7 @@ npm install
 npm start
 ```
 
-For a standalone Windows executable that does not need installation, run `npm run dist:win` on Windows. Copy the generated `Decksona <version>.exe` from `dist/` anywhere and launch it. To build the optional Windows installer, run `npm run dist:win:installer`. For a macOS DMG, run `npm run dist:mac` on a Mac. Builds are written to `dist/`. macOS distribution to other users requires Apple code signing and notarization; local development does not.
+For a standalone Windows executable that does not need installation, run `npm run dist:win` on Windows. Copy the generated `Decksona.exe` from `dist/` anywhere and launch it; each build overwrites that filename. To build the optional Windows installer, run `npm run dist:win:installer`. For a macOS DMG, run `npm run dist:mac` on a Mac. Builds are written to `dist/`. macOS distribution to other users requires Apple code signing and notarization; local development does not.
 
 ## Connect
 
