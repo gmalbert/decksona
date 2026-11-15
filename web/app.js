@@ -168,7 +168,7 @@ async function renderArtwork(item) {
 function renderPlayer() {
   const q=state.queue; const current=q?.current_item; $('trackTitle').textContent=current?trackName(current):'NOTHING PLAYING';
   $('trackArtist').textContent=current?artistName(current):'Search your library and press play'; $('trackAlbum').textContent=albumName(current);
-  $('playerState').textContent=q?.state?String(q.state).toUpperCase():'READY'; $('playPause').textContent=q?.state==='playing'?'Ⅱ':'▶'; $('playPause').setAttribute('aria-label',q?.state==='playing'?'Pause':'Play');
+  $('playerState').textContent=q?.state?String(q.state).toUpperCase():'READY'; $('playPause').textContent=q?.state==='playing'?'⏸':'▶'; $('playPause').setAttribute('aria-label',q?.state==='playing'?'Pause':'Play');
   $('shuffle').textContent=`SHUFFLE ${q?.shuffle_enabled?'ON':'OFF'}`; $('shuffle').classList.toggle('active',Boolean(q?.shuffle_enabled)); $('shuffle').setAttribute('aria-pressed',String(Boolean(q?.shuffle_enabled)));
   const repeat=q?.repeat_mode||'off'; $('repeat').textContent=`REPEAT ${repeat.toUpperCase()}`; $('repeat').classList.toggle('active',repeat!=='off');
   const vol=state.player?.volume_level; if(Number.isFinite(vol)&&document.activeElement!==$('volume'))$('volume').value=vol;
@@ -191,7 +191,7 @@ function row(item,index,kind) {
   const buttons=document.createElement('span');buttons.className='row-buttons';
   if(kind==='results'){
     if(item.media_type==='artist'||item.media_type==='album'){
-      const open=document.createElement('button');open.textContent='›';open.setAttribute('aria-label',item.media_type==='artist'?'Show albums':'Show songs');open.addEventListener('click',()=>browseItem(item));buttons.append(open);
+      const open=document.createElement('button');open.className='browse-button';open.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/></svg>';open.setAttribute('aria-label',item.media_type==='artist'?'Show albums':'Show songs');open.title=item.media_type==='artist'?'Show albums':'Show songs';open.addEventListener('click',()=>browseItem(item));buttons.append(open);
     }
     if(item.media_type!=='artist'){
       const add=document.createElement('button');add.textContent='+';add.setAttribute('aria-label','Add to queue');add.addEventListener('click',()=>playMedia(item,'add'));
