@@ -1,12 +1,12 @@
 # Decksona
 
-![Decksona wordmark](assets/wordmark.png)
+![Decksona wordmark](assets/wordmark.svg)
 
-A Winamp-inspired desktop interface for Music Assistant. This is its own UI, not a window around the Music Assistant frontend. It controls Music Assistant players on your network, with a main deck, queue editor, library search, transport controls, seek, shuffle, repeat, volume, and output selection. **Library** and **Queue** buttons show or hide either panel. **Compact** hides both panels and shrinks the window; **Expand** restores the full layout. **Skins** opens a picker with 36 combinations of six color palettes and six surface overlays; the selection is saved locally.
+Decksona is its own interface, not a window around the Music Assistant frontend. It controls Music Assistant players on your network, with a main deck, queue editor, library search, transport controls, seek, shuffle, repeat, volume, and output selection. **Library** and **Queue** buttons show or hide either panel. **Compact** hides both panels and shrinks the window; **Expand** restores the full layout. **Skins** opens a picker with 36 combinations of six color palettes and six surface overlays; the selection is saved locally.
 
 ## Run on Windows or macOS
 
-Install Node.js 20 or newer, then from this folder:
+Check the [GitHub Releases page](https://github.com/gmalbert/decksona/releases) for a prebuilt download when one is available. Or build your own copy from source. First install Node.js 20 or newer using the [official Node.js download and installation instructions](https://nodejs.org/en/download), then run these commands from this folder:
 
 ```sh
 npm install
@@ -21,9 +21,9 @@ The repository's [`web/`](web/README.md) folder contains a phone-sized version t
 
 ## Connect
 
-1. Open Music Assistant directly at `http://YOUR_SERVER_IP:8095` (or its HTTPS URL). The Home Assistant ingress URL is not a direct API address.
-2. Create a long-lived access token in **Settings → Profile**.
-3. Start this app and enter the direct server URL and token.
+1. Open Music Assistant directly at `http://YOUR_SERVER_IP:8095` (port **8095** by default), or use its HTTPS URL. This must be the Music Assistant server address; a Home Assistant ingress URL is not a direct API address.
+2. In **Music Assistant**, open **Settings → Profile** and create a long-lived access token. This is a Music Assistant token, not a Home Assistant token.
+3. Start Decksona and enter the direct Music Assistant server URL and its token.
 4. Pick an output in the top player deck. Double-click search results to replace the queue and play, or click **+** to add one.
 
 Search filters toggle Tracks, Albums, Playlists, and Artists. Click an artist to browse albums, then click an album to see its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist rows open albums instead of starting playback.

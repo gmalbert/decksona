@@ -12,7 +12,7 @@
   <circle cx="258" cy="256" r="48" fill="#223b43" stroke="#7ad9bd" stroke-width="5"/>
   <path d="M245 226l41 30-41 30z" fill="url(#amber)"/>
 </g>
-<text x="265" y="132" fill="#e8f8f5" font-family="Segoe UI,Arial,sans-serif" font-size="104" font-weight="900" letter-spacing="5">DECKSONA</text>
+<text x="265" y="132" fill="#17352e" font-family="Segoe UI,Arial,sans-serif" font-size="104" font-weight="900" letter-spacing="5">DECKSONA</text>
 <path d="M268 155h885" stroke="#568f86" stroke-width="3"/>
-<text x="270" y="202" fill="#f6af71" font-family="Segoe UI,Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="7">DESKTOP MUSIC PLAYER</text>
+<text x="270" y="202" fill="#8d4c20" font-family="Segoe UI,Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="7">DESKTOP + PHONE PLAYER</text>
 </svg>
