@@ -249,7 +249,13 @@ document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>
 $('openQueue').addEventListener('click',()=>showPage('queuePage'));
 $('settingsOpen').addEventListener('click',()=>{if(state.base)$('serverUrl').value=state.base;$('token').required=!state.token;$('token').placeholder=state.token?'Saved on this device · leave blank to keep it':'Paste token';$('settingsDialog').showModal();});
 $('settingsClose').addEventListener('click',()=>$('settingsDialog').close());
-$('settingsForm').addEventListener('submit',async event=>{event.preventDefault();try{await connect($('serverUrl').value,$('token').value);}catch(error){say(error.message,true);}});
+$('settingsForm').addEventListener('submit',async event=>{
+  event.preventDefault();const button=$('connectButton');const errorNode=$('connectError');
+  button.disabled=true;button.textContent='CONNECTING…';errorNode.hidden=true;
+  try{await connect($('serverUrl').value,$('token').value);}
+  catch(error){errorNode.textContent=error.message;errorNode.hidden=false;say(error.message,true);}
+  finally{button.disabled=false;button.textContent='CONNECT';}
+});
 $('disconnect').addEventListener('click',()=>{localStorage.removeItem('decksona.server');localStorage.removeItem('decksona.token');localStorage.removeItem('decksona.playerId');state.base='';state.token='';state.playerId='';state.connected=false;if(state.socket)state.socket.close();$('settingsDialog').close();$('connection').textContent='OFFLINE';renderPlayer();renderQueue();say('DISCONNECTED · TOKEN REMOVED');});
 $('skinSelect').addEventListener('change',event=>applyTheme(event.target.value));
 $('searchForm').addEventListener('submit',event=>{event.preventDefault();search();});

@@ -88,13 +88,15 @@
     <form id="settingsForm">
       <div class="dialog-heading"><div><span class="eyebrow">DECKSONA · MOBILE</span><h2>Connection</h2></div><button type="button" id="settingsClose" class="icon-button" aria-label="Close settings">×</button></div>
       <label for="serverUrl">MUSIC ASSISTANT SERVER</label><input id="serverUrl" type="url" placeholder="https://music.example.com" required autocomplete="url">
-      <p class="help">Use the server address ending at its root, without /api or /ws. For this no-certificate setup, use it while your phone is on the same home Wi-Fi.</p>
+      <p class="help">Enter the full server address, including its port (often <code>:8096</code>), without /api or /ws. Use it while your phone is on the same home Wi-Fi.</p>
       <label for="token">LONG-LIVED ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off" required>
       <p class="help">Create one in Music Assistant → Settings → Profile. This token stays in this browser on this device. Disconnect below to remove it.</p>
-      <div class="dialog-actions"><button id="disconnect" class="secondary" type="button">DISCONNECT</button><button type="submit" class="primary-button">CONNECT</button></div>
+      <div class="dialog-actions"><button id="disconnect" class="secondary" type="button">DISCONNECT</button><button id="connectButton" type="submit" class="primary-button">CONNECT</button></div>
+      <p id="connectError" class="connect-error" role="alert" hidden></p>
       <hr>
       <div class="dialog-heading"><div><span class="eyebrow">APPEARANCE</span><h2>Choose a skin</h2></div><span id="skinCount" class="skin-count"></span></div>
       <select id="skinSelect" aria-label="Choose a skin"></select>
+      <p class="help skin-help">Skin changes save right away. Close this panel with × when you’re done.</p>
     </form>
   </dialog>
 
