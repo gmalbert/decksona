@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1715">
+  <meta name="description" content="A pocket-sized Decksona player for Music Assistant.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Decksona</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#player" aria-label="Decksona player"><img src="icon-192.png" alt=""><span>DECK<span>SONA</span></span></a>
+    <div class="top-actions"><span id="connection" class="connection">OFFLINE</span><button id="settingsOpen" class="icon-button" aria-label="Settings">⚙</button></div>
+  </header>
+
+  <main>
+    <section id="playerPage" class="page active" aria-label="Player">
+      <article class="player-card">
+        <div class="eyebrow"><span>NOW PLAYING</span><span id="playerState">READY</span></div>
+        <img id="cover" class="cover" src="" alt="Album artwork" hidden>
+        <div class="track-title" id="trackTitle">Connect to Music Assistant</div>
+        <div class="track-artist" id="trackArtist">Choose an output to start</div>
+        <div class="track-album" id="trackAlbum"></div>
+        <div class="progress-labels"><span id="elapsed">00:00</span><span id="duration">--:--</span></div>
+        <input id="seek" class="range seek" type="range" min="0" max="1000" value="0" aria-label="Seek position" disabled>
+        <div class="transport" aria-label="Playback controls">
+          <button data-command="previous" aria-label="Previous track">|◀</button>
+          <button data-seconds="-10" aria-label="Rewind 10 seconds">◀◀</button>
+          <button id="playPause" class="primary" aria-label="Play or pause">▶</button>
+          <button data-command="stop" aria-label="Stop">■</button>
+          <button data-seconds="10" aria-label="Forward 10 seconds">▶▶</button>
+          <button data-command="next" aria-label="Next track">▶|</button>
+        </div>
+        <div class="toggle-row">
+          <button id="shuffle" class="pill" aria-pressed="false">SHUFFLE OFF</button>
+          <button id="repeat" class="pill">REPEAT OFF</button>
+        </div>
+      </article>
+      <section class="panel output-panel">
+        <label for="playerSelect">OUTPUT</label>
+        <select id="playerSelect"><option value="">Connect to Music Assistant</option></select>
+        <div class="volume-wrap"><label for="volume">VOL</label><input id="volume" class="range" type="range" min="0" max="100" value="0" disabled><span id="volumeValue">--</span></div>
+      </section>
+      <button id="openQueue" class="next-up panel" aria-label="Open queue">
+        <span class="eyebrow">UP NEXT</span><span id="nextTitle">Queue is empty</span><span class="chevron">›</span>
+      </button>
+    </section>
+
+    <section id="libraryPage" class="page" aria-label="Music library">
+      <section class="panel library-panel">
+        <div class="panel-heading"><h1>LIBRARY</h1><span id="resultCount"></span></div>
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" type="search" placeholder="Search artists, albums, tracks…" autocomplete="off" aria-label="Search music">
+          <button type="submit">FIND</button>
+        </form>
+        <div class="filters" aria-label="Search types">
+          <button data-filter="track" aria-pressed="true">TRACKS</button><button data-filter="album" aria-pressed="true">ALBUMS</button><button data-filter="playlist" aria-pressed="true">PLAYLISTS</button><button data-filter="artist" aria-pressed="true">ARTISTS</button>
+        </div>
+        <div id="browseBar" class="browse-bar" hidden><button id="browseBack">‹ BACK</button><span id="browseLabel"></span></div>
+        <div id="results" class="list"><div class="empty">Search your Music Assistant library.</div></div>
+      </section>
+    </section>
+
+    <section id="queuePage" class="page" aria-label="Playlist queue">
+      <section class="panel queue-panel">
+        <div class="panel-heading"><h1>PLAYLIST</h1><span id="queueCount">0 ITEMS</span></div>
+        <div class="eyebrow queue-subhead"><span>UP NEXT</span><span>TIME</span></div>
+        <div id="queueList" class="list"><div class="empty">Connect to see the queue.</div></div>
+      </section>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Main navigation">
+    <button class="tab active" data-page="playerPage"><span>◉</span>PLAYER</button>
+    <button class="tab" data-page="libraryPage"><span>⌕</span>LIBRARY</button>
+    <button class="tab" data-page="queuePage"><span>☷</span>QUEUE</button>
+  </nav>
+
+  <div id="message" class="message" role="status" aria-live="polite">CONNECT TO MUSIC ASSISTANT IN SETTINGS</div>
+
+  <dialog id="settingsDialog">
+    <form id="settingsForm">
+      <div class="dialog-heading"><div><span class="eyebrow">DECKSONA · MOBILE</span><h2>Connection</h2></div><button type="button" id="settingsClose" class="icon-button" aria-label="Close settings">×</button></div>
+      <label for="serverUrl">MUSIC ASSISTANT SERVER</label><input id="serverUrl" type="url" placeholder="https://music.example.com" required autocomplete="url">
+      <p class="help">Use the server address ending at its root, without /api or /ws. For this no-certificate setup, use it while your phone is on the same home Wi-Fi.</p>
+      <label for="token">LONG-LIVED ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off" required>
+      <p class="help">Create one in Music Assistant → Settings → Profile. This token stays in this browser on this device. Disconnect below to remove it.</p>
+      <div class="dialog-actions"><button id="disconnect" class="secondary" type="button">DISCONNECT</button><button type="submit" class="primary-button">CONNECT</button></div>
+      <hr>
+      <div class="dialog-heading"><div><span class="eyebrow">APPEARANCE</span><h2>Choose a skin</h2></div><span id="skinCount" class="skin-count"></span></div>
+      <select id="skinSelect" aria-label="Choose a skin"></select>
+    </form>
+  </dialog>
+
+  <script src="themes.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

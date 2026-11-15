@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "web": "node web/server.js",
     "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --test tests/*.test.js",
     "dist:win": "electron-builder --win portable",
     "dist:win:installer": "electron-builder --win nsis",
