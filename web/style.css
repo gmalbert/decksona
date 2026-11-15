@@ -2,3 +2,4 @@
 .transport button#playPause{font-size:24px}.transport button[data-command="stop"]{font-size:22px}
 .dialog-actions .primary-button{background:var(--accent);border-color:var(--accent);color:#0b1715}.dialog-actions .primary-button:disabled{opacity:.65;cursor:wait}.connect-error{margin:0 0 12px;padding:9px 10px;border:1px solid #a35d52;background:#351f20;color:#ffc1b2;font-size:12px;line-height:1.4}.connect-error[hidden]{display:none}.skin-help{margin-bottom:0}
 .transport button#playPause{font-family:Arial,sans-serif;font-size:25px;line-height:1}.row-buttons button.browse-button{display:grid;place-items:center;width:42px;height:38px;font-size:0}.row-buttons .browse-button svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.row-buttons button.browse-button,.row-buttons button:not(.browse-button){width:40px;height:38px;box-sizing:border-box}
