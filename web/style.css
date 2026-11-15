@@ -10,3 +10,4 @@
 .tabbar .tab .tab-count{margin-inline-start:.35em}.header-settings{border:0;background:transparent}.transport button[data-command="stop"]{font-family:Arial,sans-serif;font-size:25px;line-height:1}
 .transport button{display:grid;place-items:center}.transport button[data-command="stop"]{font-size:0;line-height:1}.transport button[data-command="stop"]::before{content:"";display:block;width:18px;height:18px;background:currentColor}
 .transport button[data-command="stop"]::before{transform:translateY(4px)}
+.transport button[data-command="stop"]{position:relative}.transport button[data-command="stop"]::before{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
