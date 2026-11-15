@@ -6,3 +6,4 @@
 .tab .tab-label{font-size:9px;letter-spacing:.1em}.tab .tab-count{font-size:9px;letter-spacing:0;color:inherit}
 .tabbar .tab{min-height:60px;gap:5px;font-size:12px}.tabbar .tab span:first-child{font-size:24px}.tabbar .tab .tab-label,.tabbar .tab .tab-count{font-size:12px}
 .tabbar .tab .tab-count{font-size:inherit}
+.tabbar .tab{align-items:center;justify-content:center}.tabbar .tab .tab-label{display:inline-flex;align-items:center;justify-content:center;line-height:1}.tabbar .tab .tab-count{font-size:12px!important;line-height:1;vertical-align:middle}
