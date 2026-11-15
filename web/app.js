@@ -210,7 +210,7 @@ function renderList(target,items,kind,empty) {
   const node=$(target);node.replaceChildren();if(!items.length){const e=document.createElement('div');e.className='empty';e.textContent=empty;node.append(e);return;}
   const frag=document.createDocumentFragment();items.forEach((item,i)=>frag.append(row(item,i,kind)));node.append(frag);
 }
-function renderQueue(){ $('queueCount').textContent=`${state.items.length} ITEMS`;renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.'); }
+function renderQueue(){ const count=state.items.length;$('queueCount').textContent=`${count} ITEMS`;$('tabQueueCount').textContent=`(${count})`;document.querySelector('.tab[data-page="queuePage"]').setAttribute('aria-label',`Queue, ${count} ${count===1?'song':'songs'}`);renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.'); }
 async function refresh() {
   if(state.refreshing||!state.base||!state.token)return;state.refreshing=true;
   try{
