@@ -9,3 +9,4 @@
 .tabbar .tab{align-items:center;justify-content:center}.tabbar .tab .tab-label{display:inline-flex;align-items:center;justify-content:center;line-height:1}.tabbar .tab .tab-count{font-size:12px!important;line-height:1;vertical-align:middle}
 .tabbar .tab .tab-count{margin-inline-start:.35em}.header-settings{border:0;background:transparent}.transport button[data-command="stop"]{font-family:Arial,sans-serif;font-size:25px;line-height:1}
 .transport button{display:grid;place-items:center}.transport button[data-command="stop"]{font-size:0;line-height:1}.transport button[data-command="stop"]::before{content:"";display:block;width:18px;height:18px;background:currentColor}
+.transport button[data-command="stop"]::before{transform:translateY(4px)}
