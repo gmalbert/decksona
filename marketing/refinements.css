@@ -1,0 +1,306 @@
+/* Keep the header wordmark proportional to the reference branding. */
+.wordmark {
+  gap: 15px;
+  font-size: 28.5px;
+  letter-spacing: -1.5px;
+}
+
+.wordmark img {
+  width: 38px;
+  height: 38px;
+}
+
+/* Use the app's own queue conventions: row numbers and move controls. */
+.queue-index {
+  width: 20px;
+  flex: none;
+  color: #a6aaa0;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.queue-reorder {
+  width: 31px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  color: #aab4a7;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.queue-reorder i {
+  font-style: normal;
+}
+
+/* Show the real player deck rather than a generic controls mockup. */
+.controls-illustration {
+  height: 190px;
+  margin: 29px 0 0;
+  display: block;
+  overflow: hidden;
+  border: 1px solid #ffffff14;
+  background: #0e1115;
+}
+
+.controls-illustration img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.phone-section {
+  padding: 105px 32px 108px;
+  border-top: 1px solid var(--line);
+  background: radial-gradient(ellipse 46% 80% at 73% 40%, #70d9bd0b, transparent 82%), #121610;
+}
+
+.phone-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  align-items: center;
+  gap: 72px;
+}
+
+.phone-copy .section-index {
+  display: block;
+  margin-bottom: 17px;
+}
+
+.phone-copy .eyebrow {
+  margin: 0 0 12px;
+  font-size: 9px;
+}
+
+.phone-copy h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(43px, 4.5vw, 61px);
+  font-weight: 500;
+  letter-spacing: -0.071em;
+  line-height: 0.99;
+}
+
+.phone-copy h2 em {
+  color: var(--teal);
+  font-weight: 400;
+}
+
+.phone-copy > p:not(.eyebrow) {
+  max-width: 410px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.phone-tabs {
+  display: inline-flex;
+  gap: 0;
+  margin: 9px 0 5px;
+  border: 1px solid #ffffff25;
+  background: #0e120e;
+}
+
+.phone-tabs span {
+  padding: 10px 12px;
+  border-right: 1px solid #ffffff1b;
+  color: #c6cbc0;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.09em;
+}
+
+.phone-tabs span:last-child {
+  border-right: 0;
+}
+
+.phone-tabs span:first-child {
+  color: var(--teal);
+}
+
+.phone-copy > .phone-output-note {
+  font-size: 10px !important;
+  line-height: 1.75 !important;
+}
+
+.phone-output-note strong {
+  color: #e5e3d8;
+  font-weight: 600;
+}
+
+.phone-setup {
+  padding: 25px;
+  border: 1px solid #ffffff1c;
+  background: #191e18;
+}
+
+.phone-setup-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #ffffff16;
+}
+
+.phone-setup-icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid #70d9bd5e;
+  border-radius: 50%;
+  color: var(--teal);
+  font-size: 15px;
+}
+
+.phone-setup-heading .eyebrow {
+  margin: 2px 0 9px;
+  font-size: 8px;
+}
+
+.phone-setup-heading h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.13;
+}
+
+.phone-steps {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone-steps li {
+  display: grid;
+  grid-template-columns: 27px 1fr;
+  gap: 11px;
+  padding: 15px 0;
+  border-bottom: 1px solid #ffffff12;
+}
+
+.phone-steps li > span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f5a96360;
+  border-radius: 50%;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.phone-steps strong {
+  color: #e6e5da;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.phone-steps p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.75;
+}
+
+.phone-steps code {
+  padding: 2px 4px;
+  background: #ffffff0c;
+  color: #ddd9cb;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.phone-source-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--teal);
+  font-size: 10px;
+}
+
+.phone-source-link span {
+  margin-left: 5px;
+}
+
+.phone-security {
+  margin: 17px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--amber);
+  background: #f5a9630a;
+  color: #b7b5a9;
+  font-size: 9px;
+  line-height: 1.8;
+}
+
+.phone-security strong {
+  color: #edbd83;
+}
+
+.sendspin-link {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-color: #f5a96380;
+  text-underline-offset: 2px;
+}
+
+.sendspin-link:hover {
+  color: #ffd0a1;
+}
+
+@media (max-width: 620px) {
+  .header-inner {
+    height: 72px;
+  }
+
+  .main-nav {
+    top: 71px;
+  }
+}
+
+@media (max-width: 900px) {
+  .phone-section {
+    padding: 84px 28px 88px;
+  }
+
+  .phone-layout {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+
+  .phone-setup {
+    max-width: 650px;
+    width: 100%;
+    margin: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .phone-section {
+    padding: 68px 20px 72px;
+  }
+
+  .phone-copy h2 {
+    font-size: clamp(42px, 10vw, 57px);
+  }
+
+  .phone-copy > p:not(.eyebrow) {
+    font-size: 11px;
+  }
+
+  .phone-setup {
+    padding: 17px;
+  }
+
+  .phone-setup-heading h3 {
+    font-size: 22px;
+  }
+
+  .phone-tabs span {
+    padding: 9px 10px;
+    font-size: 7px;
+  }
+}
