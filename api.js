@@ -5,7 +5,7 @@ const COMMANDS = Object.freeze({
   previous: 'player_queues/previous', seek: 'player_queues/seek',
   skip: 'player_queues/skip',
   playIndex: 'player_queues/play_index', playMedia: 'player_queues/play_media',
-  moveItem: 'player_queues/move_item',
+  moveItem: 'player_queues/move_item', transfer: 'player_queues/transfer',
   itemByUri: 'music/item_by_uri',
   artistAlbums: 'music/artists/artist_albums', albumTracks: 'music/albums/album_tracks',
   shuffle: 'player_queues/shuffle', repeat: 'player_queues/repeat',

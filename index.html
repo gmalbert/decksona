@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-edition="desktop">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ws: wss:">
   <title>Decksona</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="themes.css">
 </head>
 <body>
   <main class="shell">
@@ -19,7 +20,7 @@
       <div class="deck-top"><span class="section-label">NOW PLAYING</span><span id="connectionStatus" class="status">● OFFLINE</span></div>
       <div class="display-row">
         <div class="time-block"><span id="timeDisplay">00:00</span><small>ELAPSED</small></div>
-        <div class="track-block"><img id="nowPlayingArt" class="now-playing-art" alt="Album cover" role="button" tabindex="0" title="Toggle ultra-small player" hidden><div class="track-copy"><div id="trackTitle" class="track-title">NOT CONNECTED</div><div id="trackArtist" class="track-artist">Connect to your Music Assistant server</div><div class="signal"><span class="signal-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="trackMeta">MA DIGITAL AUDIO</span><button id="artworkCredit" class="artwork-credit" hidden>Photo source</button></div></div></div>
+        <div class="track-block"><div class="art-stage"><img id="nowPlayingArt" class="now-playing-art" alt="Album cover" role="button" tabindex="0" title="Toggle ultra-small player" hidden><div class="art-empty"><strong>Decksona</strong><small>YOUR LISTENING ROOM</small></div></div><div class="track-copy"><div id="trackTitle" class="track-title">NOT CONNECTED</div><div id="trackArtist" class="track-artist">Connect to your Music Assistant server</div><div class="signal"><span class="signal-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="trackMeta">MA DIGITAL AUDIO</span><button id="artworkCredit" class="artwork-credit" hidden>Photo source</button></div></div></div>
         <div class="duration-block"><span id="durationDisplay">00:00</span><small>TOTAL</small></div>
       </div>
       <div class="seek-row"><input id="seek" type="range" min="0" max="100" value="0" aria-label="Seek position"><span id="seekPercent">0%</span></div>
@@ -27,7 +28,7 @@
         <div class="transport"><button id="previous" title="Previous track (←)" aria-label="Previous track"><span class="transport-icon">|◀</span></button><button id="rewind" title="Rewind 10 seconds (Shift+←)" aria-label="Rewind 10 seconds"><span class="transport-icon">◀◀</span></button><button id="playPause" class="primary" title="Play or pause (Space)" aria-label="Play or pause"><span id="playPauseIcon" class="transport-icon">▶</span></button><button id="stop" title="Stop" aria-label="Stop"><span class="transport-icon">■</span></button><button id="fastForward" title="Fast-forward 10 seconds (Shift+→)" aria-label="Fast-forward 10 seconds"><span class="transport-icon">▶▶</span></button><button id="next" title="Next track (→)" aria-label="Next track"><span class="transport-icon">▶|</span></button></div>
         <div class="modes"><button id="shuffle" class="mode" aria-pressed="false">SHUFFLE</button><button id="repeat" class="mode" aria-label="Repeat mode">REPEAT OFF</button></div>
       </div>
-      <div class="output-row"><label for="playerSelect">OUTPUT</label><select id="playerSelect" aria-label="Music Assistant output device"><option value="">Select an output</option></select><label for="volume">VOL</label><input id="volume" type="range" min="0" max="100" value="50" aria-label="Volume"><span id="volumeValue">50</span></div>
+      <div class="output-row"><label for="playerSelect">PLAYER</label><select id="playerSelect" aria-label="Music Assistant player"><option value="">Select a player</option></select><label for="volume">VOL</label><input id="volume" type="range" min="0" max="100" value="50" aria-label="Volume"><span id="volumeValue">50</span></div>
     </section>
 
     <section class="workspace">
@@ -56,16 +57,26 @@
       <label for="serverUrl">SERVER URL</label><input id="serverUrl" type="url" placeholder="http://192.168.1.100:8095" required>
       <label for="token">ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off">
       <small id="tokenHint">The token is encrypted when the operating system supports secure storage.</small>
+      <label class="local-audio-toggle"><input id="localAudio" type="checkbox" checked> PLAY AUDIO ON THIS COMPUTER</label>
+      <small id="localAudioStatus" role="status">Uses your system’s default speakers or headphones.</small>
+      <details><summary>Advanced audio connection</summary>
+        <label for="sendspinUrl">SENDSPIN ADDRESS (OPTIONAL)</label><input id="sendspinUrl" type="text" placeholder="ws://192.168.1.100:8927/sendspin" autocomplete="off">
+        <small>Leave blank for your server’s local Sendspin port, 8927. Remote connections require a reachable Sendspin endpoint.</small>
+      </details>
       <div id="settingsError" class="connect-error" role="alert" hidden></div>
       <div class="dialog-actions"><button type="submit">CONNECT</button></div>
     </form>
   </dialog>
   <dialog id="themesDialog" class="themes-dialog">
     <div class="dialog-title"><span>PLAYER SKINS <small id="themeCount"></small></span><button id="closeThemes" type="button" aria-label="Close skins">✕</button></div>
-    <p>Choose a color palette and surface overlay. Your selection is saved for this computer.</p>
+    <p>Explore 21 crafted listening rooms and 36 classic skins. Your selection is saved for this computer.</p>
+    <details class="selected-theme-preview"><summary id="selectedThemeLabel">Enlarge selected preview</summary><img id="selectedThemePreview" alt="Selected player skin preview"></details>
     <div id="themeGrid" class="theme-grid"></div>
   </dialog>
   <script src="themes.js"></script>
+  <script src="player-session.js"></script>
+  <script src="local-player.js"></script>
+  <script src="desktop-audio.bundle.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

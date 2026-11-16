@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-edition="web">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -7,23 +7,24 @@
   <meta name="description" content="A pocket-sized Decksona player for Music Assistant.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest?v=phone-width-6">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=phone-width-6">
+  <link rel="stylesheet" href="themes.css">
   <title>Decksona</title>
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="#player" aria-label="Decksona player"><img src="icon-192.png" alt=""><span>DECK<span>SONA</span></span></a>
-    <div class="top-actions"><span id="connection" class="connection">OFFLINE</span><button id="settingsOpen" class="icon-button header-settings" aria-label="Settings">⚙</button></div>
+    <div class="top-actions"><button id="skinsOpen" class="skin-launch" type="button">SKINS</button><span id="connection" class="connection">OFFLINE</span><button id="settingsOpen" class="icon-button header-settings" aria-label="Settings">⚙</button></div>
   </header>
 
   <main>
     <section id="playerPage" class="page active" aria-label="Player">
       <article class="player-card">
         <div class="eyebrow"><span>NOW PLAYING</span><span id="playerState">READY</span></div>
-        <img id="cover" class="cover" src="" alt="Album artwork" hidden>
+        <div class="art-stage"><img id="cover" class="cover" src="" alt="Album artwork" hidden><div class="art-empty"><strong>Decksona</strong><small>YOUR LISTENING ROOM</small></div></div>
         <div class="track-title" id="trackTitle">Connect to Music Assistant</div>
         <div class="track-artist" id="trackArtist">Choose an output to start</div>
         <div class="track-album" id="trackAlbum"></div>
@@ -32,7 +33,7 @@
         <div class="transport" aria-label="Playback controls">
           <button data-command="previous" aria-label="Previous track">|◀</button>
           <button data-seconds="-10" aria-label="Rewind 10 seconds">◀◀</button>
-          <button id="playPause" class="primary" aria-label="Play or pause">▶</button>
+          <button id="playPause" class="primary" aria-label="Play"><svg class="playback-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg></button>
           <button data-command="stop" aria-label="Stop">■</button>
           <button data-seconds="10" aria-label="Forward 10 seconds">▶▶</button>
           <button data-command="next" aria-label="Next track">▶|</button>
@@ -43,9 +44,13 @@
         </div>
       </article>
       <section class="panel output-panel">
-        <label for="playerSelect">OUTPUT</label>
+        <label for="playerSelect">PLAYER</label>
         <select id="playerSelect"><option value="">Connect to Music Assistant</option></select>
         <div class="volume-wrap"><label for="volume">VOL</label><input id="volume" class="range" type="range" min="0" max="100" value="0" disabled><span id="volumeValue">--</span></div>
+      </section>
+      <section class="panel phone-audio-panel" aria-label="Phone playback">
+        <button id="phoneAudioButton" class="primary-button" type="button">LISTEN ON THIS PHONE</button>
+        <p id="phoneAudioStatus" class="help" role="status">Play through this phone’s speaker or headphones.</p>
       </section>
       <button id="openQueue" class="next-up panel" aria-label="Open queue">
         <span class="eyebrow">UP NEXT</span><span id="nextTitle">Queue is empty</span><span class="chevron">›</span>
@@ -83,6 +88,7 @@
   </nav>
 
   <div id="message" class="message" role="status" aria-live="polite">CONNECT TO MUSIC ASSISTANT IN SETTINGS</div>
+  <aside id="updateNotice" class="update-notice" role="status" hidden><span>A Decksona update is ready.</span><button id="reloadApp" type="button">RELOAD</button></aside>
 
   <dialog id="settingsDialog">
     <form id="settingsForm">
@@ -94,13 +100,30 @@
       <div class="dialog-actions"><button id="disconnect" class="secondary" type="button">DISCONNECT</button><button id="connectButton" type="submit" class="primary-button">CONNECT</button></div>
       <p id="connectError" class="connect-error" role="alert" hidden></p>
       <hr>
+      <div class="dialog-heading"><h2>Phone audio</h2><button id="stopPhoneAudio" class="secondary" type="button">TURN OFF</button></div>
+      <p class="help">After connecting, tap Listen on this phone. Keep Decksona open while listening. If iOS interrupts audio, return here and tap Resume phone audio.</p>
+      <details><summary>Advanced phone audio</summary>
+        <label for="phoneSendspinUrl">SENDSPIN ADDRESS (OPTIONAL)</label><input id="phoneSendspinUrl" type="text" placeholder="ws://192.168.1.100:8927/sendspin" autocomplete="off">
+        <p class="help">Leave blank on home Wi-Fi. An HTTPS page needs a reachable wss:// audio endpoint; the Music Assistant API address alone is not enough.</p>
+      </details>
+      <hr>
       <div class="dialog-heading"><div><span class="eyebrow">APPEARANCE</span><h2>Choose a skin</h2></div><span id="skinCount" class="skin-count"></span></div>
       <select id="skinSelect" aria-label="Choose a skin"></select>
       <p class="help skin-help">Skin changes save right away. Close this panel with × when you’re done.</p>
     </form>
   </dialog>
 
+  <dialog id="themesDialog" class="themes-dialog" aria-labelledby="skinGalleryTitle">
+    <div class="dialog-heading"><div><span class="eyebrow">57 SKINS · 21 LISTENING ROOMS</span><h2 id="skinGalleryTitle">Find your atmosphere</h2></div><button id="skinsClose" class="icon-button" type="button" aria-label="Close skins">×</button></div>
+    <p id="activeSkinName" aria-live="polite"></p>
+    <details class="selected-theme-preview"><summary id="selectedThemeLabel">Enlarge selected preview</summary><img id="selectedThemePreview" alt="Selected player skin preview"></details>
+    <div id="themeGrid" class="theme-grid"></div>
+  </dialog>
+
   <script src="themes.js"></script>
-  <script src="app.js"></script>
+  <script src="player-session.js?v=phone-fix-5"></script>
+  <script src="local-player.js?v=phone-fix-5"></script>
+  <script src="audio.bundle.js?v=phone-fix-5"></script>
+  <script src="app.js?v=phone-width-6"></script>
 </body>
 </html>

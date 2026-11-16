@@ -1,5 +1,13 @@
 node_modules/
+desktop-audio.bundle.js
+output/audio-test-python/
+output/audio-smoke-profile/
+output/audio-report.json
+output/web-audio-smoke-profile/
+output/web-audio-report.json
+output/player-diagnostic-profile/
 dist/
 .env
 .DS_Store
 *.log
+output/skin-previews/

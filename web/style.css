@@ -11,3 +11,38 @@
 .transport button{display:grid;place-items:center}.transport button[data-command="stop"]{font-size:0;line-height:1}.transport button[data-command="stop"]::before{content:"";display:block;width:18px;height:18px;background:currentColor}
 .transport button[data-command="stop"]::before{transform:translateY(4px)}
 .transport button[data-command="stop"]{position:relative}.transport button[data-command="stop"]::before{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.phone-audio-panel { padding: 12px 16px; }
+.phone-audio-panel button { width: 100%; min-height: 42px; border-radius: var(--button-radius, 8px); font-size: 12px; letter-spacing: .08em; cursor: pointer; }
+.phone-audio-panel .help { margin: 8px 0 0; }
+.transport button#playPause { appearance: none; -webkit-appearance: none; padding: 0; font-size: 0; line-height: 1; }
+.transport .playback-icon { display: block; width: 26px; height: 26px; fill: currentColor; pointer-events: none; }
+.update-notice { position: fixed; z-index: 8; bottom: calc(78px + env(safe-area-inset-bottom)); left: 12px; right: 12px; max-width: 680px; margin: auto; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--border); border-radius: 12px; color: var(--text, #e2eaea); background: var(--panel); box-shadow: 0 4px 20px #0006; font-size: 13px; }
+.update-notice[hidden] { display: none; }
+.update-notice button { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--screen); color: var(--accent); font-size: 11px; }
+#stopPhoneAudio { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--button-radius, 8px); color: var(--accent); background: var(--screen); font-size: 11px; }
+#phoneSendspinUrl { width: 100%; min-height: 43px; margin-top: 6px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text, #e2eaea); background: var(--screen); }
+label[for="phoneSendspinUrl"] { display: block; margin-top: 12px; font-size: 10px; letter-spacing: .08em; }
+/* Let content shrink to the viewport rather than giving the page its intrinsic width. */
+html, body, main { width: 100%; min-width: 0; max-width: 100%; }
+.page { width: 100%; min-width: 0; }
+.page > *, .library-panel > *, .queue-panel > * { min-width: 0; max-width: 100%; }
+.search-form input { width: 0; min-width: 0; flex: 1 1 0%; font-size: 16px; }
+.search-form button { flex: 0 0 auto; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.filters button { min-width: 0; }
+.browse-bar span { min-width: 0; flex: 1; }
+.list-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) max-content max-content; width: 100%; min-width: 0; }
+.row-buttons { min-width: 0; }
+@media (max-width: 480px) {
+  /* Sixteen-pixel fields prevent Safari from zooming the whole app on focus. */
+  input:not([type="range"]), select, textarea, .output-panel select, .search-form input { font-size: 16px; }
+  .topbar { padding-inline: 10px; gap: 8px; }
+  .brand { min-width: 0; gap: 6px; font-size: 14px; }
+  .brand img { width: 26px; height: 26px; flex: none; }
+  .top-actions { flex: none; gap: 6px; }
+  .top-actions .connection { font-size: 8px; letter-spacing: .04em; }
+  .skin-launch { font-size: 9px; padding-inline: 8px; }
+  #results .row-time { display: none; }
+  #results .list-row { grid-template-columns: 22px minmax(0, 1fr) max-content; }
+  .row-buttons button.browse-button, .row-buttons button:not(.browse-button) { width: 44px; height: 44px; padding: 0; }
+}

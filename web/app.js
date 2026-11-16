@@ -1,12 +1,111 @@
 const $ = id => document.getElementById(id);
+const WEB_BUILD = 'phone-width-6';
+let availableBuild = '';
+async function checkForUpdate() {
+  try {
+    const response = await fetch(`version.json?check=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) return;
+    const version = await response.json();
+    if (typeof version.build !== 'string' || version.build === WEB_BUILD) return;
+    availableBuild = version.build;
+    $('updateNotice').hidden = false;
+  } catch { /* A temporary network outage must not interrupt playback. */ }
+}
 const commands = {
   players: 'players/all', queues: 'player_queues/all', items: 'player_queues/items', search: 'music/search',
   playPause: 'player_queues/play_pause', stop: 'player_queues/stop', next: 'player_queues/next', previous: 'player_queues/previous',
   seek: 'player_queues/seek', skip: 'player_queues/skip', playIndex: 'player_queues/play_index', playMedia: 'player_queues/play_media',
-  moveItem: 'player_queues/move_item', itemByUri: 'music/item_by_uri', artistAlbums: 'music/artists/artist_albums',
+  moveItem: 'player_queues/move_item', transfer: 'player_queues/transfer', itemByUri: 'music/item_by_uri', artistAlbums: 'music/artists/artist_albums',
   albumTracks: 'music/albums/album_tracks', shuffle: 'player_queues/shuffle', repeat: 'player_queues/repeat', volume: 'players/cmd/volume_set'
 };
 const state = { base: '', token: '', socket: null, opening: null, serial: 0, pending: new Map(), playerId: '', players: [], queues: [], queue: null, player: null, items: [], results: [], filters: new Set(['track','album','playlist','artist']), history: [], browseLabel: '', refreshing: false, seeking: false, theme: 'phosphor-glass', messageTimer: 0 };
+function phoneClientId() { return phoneAudio?.clientId || localStorage.getItem('decksona.phonePlayerId') || ''; }
+function phonePlayerId() { return window.DECKSONA_LOCAL_PLAYER.localPlayerId(state.players, phoneClientId()); }
+let phoneAudioState = 'connecting';
+let phoneAudioDetail = '';
+function renderPhoneAudioStatus() {
+  const local = window.DECKSONA_LOCAL_PLAYER.findLocalPlayer(state.players, phoneClientId());
+  const labels = { disabled: 'Phone audio is off. Tap to enable it.', connecting: 'Connecting phone audio… Approve the Decksona player in Music Assistant if setup is required.', ready: 'This phone is ready · speaker or headphones', reconnecting: 'Phone audio is reconnecting. Tap Resume if sound does not return.', pairing: phoneAudioDetail, error: phoneAudioDetail };
+  let text = labels[phoneAudioState] || phoneAudioDetail;
+  if (phoneAudioState === 'ready') {
+    if (!local) text = 'Audio connected · waiting for Music Assistant to register this phone.';
+    else if (local.needs_setup) text = 'Phone audio needs approval in Music Assistant’s player setup.';
+    else if (local.available === false) text = 'Audio connected · Music Assistant currently reports this phone unavailable.';
+  }
+  $('phoneAudioStatus').textContent = text;
+}
+const phoneAudio = window.createPhoneAudio?.({
+  onStatus: ({ status, detail }) => {
+    phoneAudioState = status;
+    phoneAudioDetail = detail;
+    $('phoneAudioButton').textContent = status === 'disabled' ? 'LISTEN ON THIS PHONE' : 'RESUME PHONE AUDIO';
+    if (status === 'error' || status === 'pairing') say(detail, status === 'error');
+    renderOutput();
+    if (status === 'disabled' && navigator.mediaSession) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = 'none';
+      for (const action of ['play','pause','stop','nexttrack','previoustrack','seekto','seekbackward','seekforward']) {
+        try { navigator.mediaSession.setActionHandler(action, null); } catch {}
+      }
+    }
+  },
+  onMediaState: local => {
+    if (!navigator.mediaSession) return;
+    const metadata = local.serverState?.metadata;
+    if (metadata && typeof MediaMetadata !== 'undefined') {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: metadata.title || 'Decksona', artist: metadata.artist || '', album: metadata.album || '' });
+    }
+    navigator.mediaSession.playbackState = local.isPlaying ? 'playing' : 'paused';
+  },
+});
+
+function installPhoneMediaControls() {
+  if (!navigator.mediaSession) return;
+  const send = (command, params) => {
+    try { phoneAudio.sendCommand(command, params); } catch (error) { say(error.message, true); }
+  };
+  const actions = {
+    play: () => { phoneAudio.unlock()?.catch(error => say(error.message, true)); send('play'); },
+    pause: () => send('pause'), stop: () => send('stop'),
+    nexttrack: () => send('next'), previoustrack: () => send('previous'),
+    seekto: event => send('seek', { position_ms: Math.round(event.seekTime * 1000) }),
+    seekbackward: event => send('seek_relative', { offset_ms: -(event.seekOffset || 10) * 1000 }),
+    seekforward: event => send('seek_relative', { offset_ms: (event.seekOffset || 10) * 1000 }),
+  };
+  for (const [action, handler] of Object.entries(actions)) {
+    try { navigator.mediaSession.setActionHandler(action, handler); } catch { /* unsupported control */ }
+  }
+}
+
+async function listenOnPhone() {
+  if (!phoneAudio) { say('Phone audio could not load. Reload Decksona.', true); return; }
+  if (!state.base || !state.token) { $('settingsOpen').click(); return; }
+  try {
+    // start() calls unlock() synchronously from this click, before any await.
+    const connecting = phoneAudio.start(state.base, $('phoneSendspinUrl').value);
+    localStorage.setItem('decksona.sendspinUrl', $('phoneSendspinUrl').value.trim());
+    localStorage.setItem('decksona.phonePlayerId', phoneAudio.clientId);
+    state.playerId = phonePlayerId();
+    localStorage.setItem('decksona.playerId', state.playerId);
+    localStorage.setItem('decksona.phoneAudio', 'true');
+    state.queue = null; state.player = null; state.items = [];
+    renderOutput(); renderPlayer(); renderQueue();
+    installPhoneMediaControls();
+    await connecting;
+    await refresh();
+  } catch (error) { $('phoneAudioStatus').textContent = error.message; say(error.message, true); }
+}
+
+function stopPhoneAudio() {
+  const id = phonePlayerId();
+  phoneAudio?.stop();
+  localStorage.removeItem('decksona.phoneAudio');
+  if (id && state.playerId === id) {
+    state.playerId = ''; state.player = null; state.queue = null; state.items = [];
+    localStorage.removeItem('decksona.playerId');
+  }
+  renderOutput(); renderPlayer(); renderQueue();
+}
 
 function say(text, error = false) {
   const node = $('message'); node.textContent = text; node.classList.toggle('error', error); node.classList.add('visible');
@@ -64,6 +163,7 @@ function openConnection(base, token) {
 async function connect(baseValue, tokenValue) {
   const base = normalizeBase(baseValue); const token = String(tokenValue || state.token).trim();
   if (!token) throw new Error('Enter a long-lived Music Assistant token.');
+  if (state.base && state.base !== base) stopPhoneAudio();
   for (const [,waiting] of state.pending) { clearTimeout(waiting.timer); waiting.reject(new Error('Connection changed.')); }
   state.pending.clear(); if (state.socket) { const old=state.socket; state.socket=null; try { old.close(); } catch {} }
   state.base = base; state.token = token;
@@ -103,15 +203,28 @@ function renderProgress() {
   $('seek').disabled=!total||!state.queue?.active;
 }
 function applyTheme(id) {
-  const theme=window.DECKSONA_THEMES?.find(entry=>entry.id===id)||window.DECKSONA_THEMES?.[0]; if(!theme)return;
+  const theme=window.DECKSONA_THEMES?.find(entry=>entry.id===id)||window.DECKSONA_THEMES?.find(entry=>entry.id==='phosphor-glass'); if(!theme)return;
   state.theme=theme.id; const root=document.documentElement;
-  for(const [key,value] of Object.entries({background:theme.background,panel:theme.panel,screen:theme.screen,accent:theme.accent,secondary:theme.secondary,border:theme.border})) root.style.setProperty(`--${key}`,value);
+  window.DECKSONA_SKINS.apply(root,theme);
   const patterns={glass:'linear-gradient(125deg,#fff2,transparent 35%,#fff1 75%,transparent)',scanline:'repeating-linear-gradient(0deg,transparent 0 3px,#ffffff12 3px 4px)',circuit:'repeating-linear-gradient(90deg,transparent 0 34px,#ffffff12 34px 35px),repeating-linear-gradient(0deg,transparent 0 26px,#ffffff12 26px 27px)',grid:'repeating-linear-gradient(90deg,transparent 0 14px,#ffffff10 14px 15px),repeating-linear-gradient(0deg,transparent 0 14px,#ffffff10 14px 15px)',diagonal:'repeating-linear-gradient(135deg,transparent 0 7px,#ffffff12 7px 8px,transparent 8px 15px)',carbon:'repeating-linear-gradient(45deg,transparent 0 5px,#ffffff12 5px 7px,transparent 7px 12px)'};
-  root.style.setProperty('--pattern',patterns[theme.pattern]||patterns.glass); localStorage.setItem('decksona.theme',theme.id);
+  root.style.setProperty('--pattern',patterns[theme.pattern]||'none'); localStorage.setItem('decksona.theme',theme.id);
+  $('skinSelect').value=theme.id;
+  document.querySelectorAll('.theme-card').forEach(card=>{const active=card.dataset.themeId===theme.id;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));});
+  $('activeSkinName').textContent=theme.name;
 }
 function initSkins() {
-  const select=$('skinSelect'); for(const theme of window.DECKSONA_THEMES||[]) select.add(new Option(theme.name,theme.id));
-  $('skinCount').textContent=`${window.DECKSONA_THEMES?.length||0} SKINS`; const saved=localStorage.getItem('decksona.theme')||'phosphor-glass'; select.value=saved; applyTheme(saved);
+  const select=$('skinSelect'),grid=$('themeGrid');
+  for(const signature of [true,false]) {
+    const group=document.createElement('optgroup');group.label=signature?'Listening rooms · 21 signature designs':'Classic palettes · 36 original skins';
+    const heading=document.createElement('h3');heading.className='theme-group-label';heading.textContent=group.label;grid.append(heading);
+    for(const theme of window.DECKSONA_THEMES||[]) if(Boolean(theme.signature)===signature) {
+      group.append(new Option(theme.name,theme.id));
+      grid.append(window.DECKSONA_SKINS.createCard(document,theme,()=>applyTheme(theme.id)));
+    }
+    select.append(group);
+  }
+  $('skinCount').textContent=`${window.DECKSONA_THEMES?.length||0} SKINS`;
+  applyTheme(localStorage.getItem('decksona.theme')||'phosphor-glass');
 }
 function imageCandidates(item) {
   const value=media(item); const images=[...(value.metadata?.images||[]),...(value.images||[]),...(value.album?.metadata?.images||[])];
@@ -160,7 +273,7 @@ async function musicBrainzPortrait(credit){
 }
 async function renderArtwork(item) {
   const img=$('cover'); const revision=String(item?.queue_item_id||item?.uri||item?.name||'');
-  if(!item){img.hidden=true;img.removeAttribute('src');return;}
+  if(!item){delete img.dataset.item;img.hidden=true;img.removeAttribute('src');return;}
   if(img.dataset.item===revision)return; img.dataset.item=revision; img.hidden=true;
   const src=await artworkFor(item); if(img.dataset.item!==revision)return;
   if(src){img.onload=()=>{img.hidden=false};img.onerror=()=>{img.hidden=true};img.src=src;}
@@ -168,7 +281,10 @@ async function renderArtwork(item) {
 function renderPlayer() {
   const q=state.queue; const current=q?.current_item; $('trackTitle').textContent=current?trackName(current):'NOTHING PLAYING';
   $('trackArtist').textContent=current?artistName(current):'Search your library and press play'; $('trackAlbum').textContent=albumName(current);
-  $('playerState').textContent=q?.state?String(q.state).toUpperCase():'READY'; $('playPause').textContent=q?.state==='playing'?'⏸':'▶'; $('playPause').setAttribute('aria-label',q?.state==='playing'?'Pause':'Play');
+  $('playerState').textContent=q?.state?String(q.state).toUpperCase():'READY';
+  const playing=q?.state==='playing';
+  $('playPause').innerHTML=playing?'<svg class="playback-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h5v16H5zM14 4h5v16h-5z"/></svg>':'<svg class="playback-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>';
+  $('playPause').setAttribute('aria-label',playing?'Pause':'Play');
   $('shuffle').textContent=`SHUFFLE ${q?.shuffle_enabled?'ON':'OFF'}`; $('shuffle').classList.toggle('active',Boolean(q?.shuffle_enabled)); $('shuffle').setAttribute('aria-pressed',String(Boolean(q?.shuffle_enabled)));
   const repeat=q?.repeat_mode||'off'; $('repeat').textContent=`REPEAT ${repeat.toUpperCase()}`; $('repeat').classList.toggle('active',repeat!=='off');
   const vol=state.player?.volume_level; if(Number.isFinite(vol)&&document.activeElement!==$('volume'))$('volume').value=vol;
@@ -177,8 +293,14 @@ function renderPlayer() {
   const next=state.items.find(item=>item.queue_item_id!==current?.queue_item_id); $('nextTitle').textContent=next?`${trackName(next)} · ${artistName(next)}`:'Queue is empty';
 }
 function renderOutput() {
-  const select=$('playerSelect'); const old=state.playerId; select.replaceChildren(new Option(state.connected?'Select an output':'Connect to Music Assistant',''));
-  for(const p of state.players.filter(item=>item.enabled!==false)) select.add(new Option(`${p.name}${p.available===false?' · OFFLINE':''}`,p.player_id));
+  renderPhoneAudioStatus();
+  const select=$('playerSelect'); const old=state.playerId; select.replaceChildren(new Option(state.connected?'Select a player':'Connect to Music Assistant',''));
+  const local=window.DECKSONA_LOCAL_PLAYER.findLocalPlayer(state.players,phoneClientId());
+  for(const p of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId())) select.add(new Option(`${p===local?'This phone · Decksona':p.name}${p.needs_setup?' · SETUP REQUIRED':p.available===false?' · OFFLINE':''}`,p.player_id));
+  if(phonePlayerId() && !state.players.some(p=>p.player_id===phonePlayerId())) {
+    const label={connecting:'connecting…',ready:'registering with server…',reconnecting:'reconnecting…',pairing:'pairing required · see Settings',error:'unavailable · see Settings'}[phoneAudioState]||'unavailable · see Settings';
+    const pending=new Option(phoneAudio?.clientId?`This phone · ${label}`:'This phone · tap Listen to enable',phonePlayerId());pending.disabled=true;select.add(pending,1);
+  }
   select.value=old;
 }
 function row(item,index,kind) {
@@ -210,26 +332,33 @@ function renderList(target,items,kind,empty) {
   const node=$(target);node.replaceChildren();if(!items.length){const e=document.createElement('div');e.className='empty';e.textContent=empty;node.append(e);return;}
   const frag=document.createDocumentFragment();items.forEach((item,i)=>frag.append(row(item,i,kind)));node.append(frag);
 }
-function renderQueue(){ const count=state.items.length;$('queueCount').textContent=`${count} ITEMS`;$('tabQueueCount').textContent=`(${count})`;document.querySelector('.tab[data-page="queuePage"]').setAttribute('aria-label',`Queue, ${count} ${count===1?'song':'songs'}`);renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.'); }
+function renderQueue(){ sessions.update(); const count=state.items.length;$('queueCount').textContent=`${count} ITEMS`;$('tabQueueCount').textContent=`(${count})`;document.querySelector('.tab[data-page="queuePage"]').setAttribute('aria-label',`Queue, ${count} ${count===1?'song':'songs'}`);renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.'); }
 async function refresh() {
   if(state.refreshing||!state.base||!state.token)return;state.refreshing=true;
+  let refreshPlayerId=state.playerId;
   try{
     await ensureConnection(); const [players,queues]=await Promise.all([request(commands.players),request(commands.queues)]);
+    if(state.playerId!==refreshPlayerId)return;
     state.players=Array.isArray(players)?players:[];state.queues=Array.isArray(queues)?queues:[];
-    if(!state.playerId||!state.players.some(p=>p.player_id===state.playerId))state.playerId=state.players.find(p=>p.available!==false)?.player_id||state.players[0]?.player_id||'';
-    state.player=state.players.find(p=>p.player_id===state.playerId)||null;state.queue=state.queues.find(q=>q.queue_id===state.playerId)||null;
-    state.items=state.queue?await request(commands.items,{queue_id:state.playerId,limit:200,offset:0}):[];if(!Array.isArray(state.items))state.items=[];
+    if(state.playerId===phoneClientId())state.playerId=phonePlayerId();
+    if(!state.playerId||(!state.players.some(p=>p.player_id===state.playerId)&&state.playerId!==phonePlayerId()))state.playerId=state.players.find(p=>p.available!==false)?.player_id||state.players[0]?.player_id||'';
+    refreshPlayerId=state.playerId;
+    const player=state.players.find(p=>p.player_id===refreshPlayerId)||null,queue=state.queues.find(q=>q.queue_id===refreshPlayerId)||null;
+    const items=queue?await request(commands.items,{queue_id:refreshPlayerId,limit:200,offset:0}):[];
+    if(state.playerId!==refreshPlayerId)return;
+    state.player=player;state.queue=queue;state.items=Array.isArray(items)?items:[];
     state.connected=true;localStorage.setItem('decksona.playerId',state.playerId);$('connection').textContent='CONNECTED';$('connection').classList.add('online');renderOutput();renderPlayer();renderQueue();
   }catch(error){state.connected=false;$('connection').textContent='RECONNECTING';$('connection').classList.remove('online');if(!document.hidden)say(error.message,true);}
-  finally{state.refreshing=false;}
+  finally{state.refreshing=false;if(state.playerId!==refreshPlayerId)await refresh();}
 }
 async function act(name,args={}) {
-  if(!state.playerId){say('SELECT AN OUTPUT FIRST',true);return;}
-  try{await request(commands[name],args);await refresh();}catch(error){say(error.message,true);}
+  if(!state.playerId){say('SELECT A PLAYER FIRST',true);return;}
+  if(state.playerId===phonePlayerId()&&(!phoneAudio?.clientId||!state.player?.available||state.player?.needs_setup)){say('Tap Listen on this phone first. If it stays unavailable, check Music Assistant player setup.',true);return;}
+  try{if(state.playerId===phoneAudio?.clientId)await phoneAudio.unlock();await ensureConnection();await request(commands[name],args);await refresh();}catch(error){say(error.message,true);}
 }
 function firstMovableIndex(q){if(Number.isInteger(q?.index_in_buffer))return Math.max(q.index_in_buffer,q.current_index??-1)+1;return Math.max(0,q?.current_index??0);}
 async function moveItem(item,shift){const queues=await request(commands.queues);const q=queues.find(entry=>entry.queue_id===state.playerId);const items=await request(commands.items,{queue_id:state.playerId,limit:200,offset:0});const index=items.findIndex(entry=>entry.queue_item_id===item.queue_item_id);const first=firstMovableIndex(q);if(index<first||index+shift<first){say('ONLY UPCOMING TRACKS CAN BE REORDERED');return;}try{await request(commands.moveItem,{queue_id:state.playerId,queue_item_id:item.queue_item_id,pos_shift:shift});say('QUEUE ORDER UPDATED');}catch(error){say(error.message,true);}finally{await refresh();}}
-async function playMedia(item,option){if(!item.uri){say('THIS ITEM HAS NO PLAYABLE URI',true);return;}if(!state.playerId){say('SELECT AN OUTPUT FIRST',true);return;}try{await request(commands.playMedia,{queue_id:state.playerId,media:item.uri,option});await refresh();}catch(error){say(error.message,true);}}
+async function playMedia(item,option){if(!item.uri){say('THIS ITEM HAS NO PLAYABLE URI',true);return;}await act('playMedia',{queue_id:state.playerId,media:item.uri,option});}
 function browseNav(){ $('browseBar').hidden=!state.history.length;$('browseLabel').textContent=state.browseLabel; }
 async function browseItem(item){
   const isArtist=item.media_type==='artist';const uri=item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);const id=item.item_id||uri?.[2];const provider=item.provider||uri?.[1];if(!id||!provider){say('THIS RESULT HAS NO BROWSE REFERENCE',true);return;}
@@ -256,12 +385,16 @@ $('settingsForm').addEventListener('submit',async event=>{
   catch(error){errorNode.textContent=error.message;errorNode.hidden=false;say(error.message,true);}
   finally{button.disabled=false;button.textContent='CONNECT';}
 });
-$('disconnect').addEventListener('click',()=>{localStorage.removeItem('decksona.server');localStorage.removeItem('decksona.token');localStorage.removeItem('decksona.playerId');state.base='';state.token='';state.playerId='';state.connected=false;if(state.socket)state.socket.close();$('settingsDialog').close();$('connection').textContent='OFFLINE';renderPlayer();renderQueue();say('DISCONNECTED · TOKEN REMOVED');});
+$('disconnect').addEventListener('click',()=>{stopPhoneAudio();localStorage.removeItem('decksona.server');localStorage.removeItem('decksona.token');localStorage.removeItem('decksona.playerId');state.base='';state.token='';state.playerId='';state.connected=false;if(state.socket)state.socket.close();$('settingsDialog').close();$('connection').textContent='OFFLINE';renderOutput();renderPlayer();renderQueue();say('DISCONNECTED · TOKEN REMOVED');});
+$('phoneAudioButton').addEventListener('click',listenOnPhone);
+$('stopPhoneAudio').addEventListener('click',stopPhoneAudio);
 $('skinSelect').addEventListener('change',event=>applyTheme(event.target.value));
+$('skinsOpen').addEventListener('click',()=>$('themesDialog').showModal());
+$('skinsClose').addEventListener('click',()=>$('themesDialog').close());
 $('searchForm').addEventListener('submit',event=>{event.preventDefault();search();});
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{const type=button.dataset.filter;if(state.filters.has(type))state.filters.delete(type);else state.filters.add(type);button.setAttribute('aria-pressed',String(state.filters.has(type)));search();}));
 $('browseBack').addEventListener('click',()=>{const previous=state.history.pop();if(!previous)return;state.results=previous.items;state.browseLabel=previous.label;browseNav();renderList('results',state.results,'results','No results.');$('resultCount').textContent=`${state.results.length} RESULTS`;});
-$('playerSelect').addEventListener('change',async event=>{state.playerId=event.target.value;localStorage.setItem('decksona.playerId',state.playerId);await refresh();});
+$('playerSelect').addEventListener('change',async event=>{await selectSessionPlayer(event.target.value);});
 for(const button of document.querySelectorAll('[data-command]'))button.addEventListener('click',()=>act(button.dataset.command,{queue_id:state.playerId}));
 for(const button of document.querySelectorAll('[data-seconds]'))button.addEventListener('click',()=>act('skip',{queue_id:state.playerId,seconds:Number(button.dataset.seconds)}));
 $('playPause').addEventListener('click',()=>act('playPause',{queue_id:state.playerId}));
@@ -272,9 +405,20 @@ $('volume').addEventListener('change',()=>act('volume',{player_id:state.playerId
 
 function init(){
   initSkins();const base=localStorage.getItem('decksona.server')||'';const token=localStorage.getItem('decksona.token')||'';
+  $('phoneSendspinUrl').value=localStorage.getItem('decksona.sendspinUrl')||'';
+  if(localStorage.getItem('decksona.phoneAudio'))$('phoneAudioStatus').textContent='Tap Listen on this phone to enable audio again. Safari requires a tap after reopening.';
+  state.playerId=localStorage.getItem('decksona.playerId')||'';
   if(base&&token){state.base=base;state.token=token;$('serverUrl').value=base;$('token').required=false;$('token').placeholder='Saved on this device';refresh();}
   else $('settingsDialog').showModal();
 }
+async function selectSessionPlayer(id){state.playerId=id;state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();localStorage.setItem('decksona.playerId',id);await refresh();}
+const sessions=window.createPlayerSession({state,command:(name,args)=>request(commands[name],args),select:selectSessionPlayer,refresh,notify:say,formatPlayerName:player=>player.player_id===phonePlayerId()?'This phone · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId())});
 setInterval(renderProgress,1000);setInterval(()=>{if(!document.hidden)refresh();},5000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate();});
+window.addEventListener('pageshow',checkForUpdate);
+$('reloadApp').addEventListener('click',()=>{
+  const url=new URL(location.href);url.searchParams.set('v',availableBuild||WEB_BUILD);location.replace(url.href);
+});
+window.addEventListener('pagehide',event=>{if(!event.persisted)phoneAudio?.stop();});
 init();

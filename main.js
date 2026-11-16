@@ -1,10 +1,14 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, shell, Tray, Menu, nativeImage } = require('electron');
+const os = require('node:os');
+const { sendspinUrl } = require('./local-audio-config');
 const fs = require('node:fs');
 const path = require('node:path');
 const { COMMANDS, normalizeServerUrl, decodeResponse } = require('./api');
 const { THEMES } = require('./themes');
 
-let settings = { serverUrl: '', playerId: '', encryptedToken: '', themeId: 'phosphor-glass' };
+let settings = { serverUrl: '', playerId: '', encryptedToken: '', themeId: 'phosphor-glass', localAudio: true, sendspinUrl: '' };
+let tray;
+let quitting = false;
 let sessionToken = '';
 let requestId = 0;
 let playerWindow;
@@ -105,23 +109,48 @@ function createWindow() {
   playerWindow = new BrowserWindow({
     width: 930, height: 690, minWidth: 530, minHeight: 320,
     backgroundColor: '#151a20', title: 'Decksona', icon: path.join(__dirname, 'assets', 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' }
   });
-  playerWindow.loadFile('index.html');
+  playerWindow.loadFile(path.join(__dirname, 'index.html'));
   playerWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  playerWindow.webContents.on('will-navigate', event => event.preventDefault());
+  playerWindow.on('close', event => {
+    if (!quitting && tray) { event.preventDefault(); playerWindow.hide(); }
+  });
+}
+
+function showPlayer() {
+  if (!playerWindow || playerWindow.isDestroyed()) createWindow();
+  if (playerWindow.isMinimized()) playerWindow.restore();
+  playerWindow.show();
+  playerWindow.focus();
 }
 
 app.setName('Decksona');
+// Two processes sharing a Sendspin identity would continuously disconnect each other.
+if (!app.requestSingleInstanceLock()) app.quit();
+else app.on('second-instance', showPlayer);
+app.on('before-quit', () => { quitting = true; });
 
 app.whenReady().then(() => {
   loadSettings();
-  ipcMain.handle('settings:get', () => ({ serverUrl: settings.serverUrl, playerId: settings.playerId, themeId: settings.themeId, hasToken: Boolean(sessionToken) }));
+  ipcMain.handle('settings:get', () => ({ serverUrl: settings.serverUrl, playerId: settings.playerId, themeId: settings.themeId, hasToken: Boolean(sessionToken), localAudio: settings.localAudio, sendspinUrl: settings.sendspinUrl }));
+  ipcMain.handle('audio:config', () => ({
+    enabled: settings.localAudio !== false && Boolean(settings.serverUrl && sessionToken),
+    url: settings.serverUrl ? sendspinUrl(settings.serverUrl, settings.sendspinUrl) : '',
+    name: `Decksona · ${os.hostname()}`,
+    version: app.getVersion(),
+  }));
   ipcMain.handle('settings:save', async (_event, input) => {
     const serverUrl = normalizeServerUrl(input.serverUrl);
+    const audioUrl = String(input.sendspinUrl || '').trim();
+    sendspinUrl(serverUrl, audioUrl);
     const token = String(input.token || '').trim() || sessionToken;
     if (!token) throw new Error('Enter a long-lived access token.');
     const old = { ...settings, sessionToken };
     settings.serverUrl = serverUrl;
+    settings.localAudio = input.localAudio !== false;
+    settings.sendspinUrl = audioUrl;
     sessionToken = token;
     settings.playerId = String(input.playerId || settings.playerId || '');
     try {
@@ -131,7 +160,8 @@ app.whenReady().then(() => {
       saveSettings();
       return { serverUrl, playerId: settings.playerId, tokenSaved: Boolean(settings.encryptedToken) };
     } catch (error) {
-      settings = { serverUrl: old.serverUrl, playerId: old.playerId, encryptedToken: old.encryptedToken, themeId: old.themeId };
+      const { sessionToken: _token, ...oldSettings } = old;
+      settings = oldSettings;
       sessionToken = old.sessionToken;
       throw error;
     }
@@ -234,14 +264,37 @@ app.whenReady().then(() => {
     if (playerWindow.isMaximized()) playerWindow.unmaximize();
     playerWindow.setMenuBarVisibility(mode !== 'mini');
     playerWindow.setMinimumSize(mode === 'mini' ? 316 : 530, mode === 'mini' ? 500 : 320);
-    if (mode === 'mini') playerWindow.setBounds({ width: 316, height: 519 });
-    else if (mode === 'compact') playerWindow.setContentSize(590, 340);
+    if (mode === 'mini') playerWindow.setContentSize(316, 620);
+    else if (mode === 'compact') playerWindow.setContentSize(660, 360);
     else if (expandedBounds) playerWindow.setBounds(expandedBounds);
     windowMode = mode;
     return { mode, bounds: playerWindow.getBounds() };
   });
+  const menu = Menu.buildFromTemplate([
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      label: 'Help',
+      submenu: [{ label: 'Decksona Website', click: () => shell.openExternal('https://decksona.com') }],
+    },
+  ]);
+  Menu.setApplicationMenu(menu);
   createWindow();
-  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  try {
+    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png')).resize({ width: 22, height: 22 });
+    tray = new Tray(icon);
+    tray.setToolTip('Decksona · Close the window to keep listening');
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'Open Decksona', click: showPlayer },
+      { type: 'separator' },
+      { label: 'Quit Decksona', click: () => app.quit() },
+    ]));
+    tray.on('click', showPlayer);
+  } catch (error) { console.warn('System tray unavailable:', error.message); }
+  app.on('activate', showPlayer);
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

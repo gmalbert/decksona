@@ -11,18 +11,30 @@ const browseHistory = [];
 let browseLabel = '';
 let selectedThemeId = 'phosphor-glass';
 const artworkCache = new Map();
+let localAudioState = 'connecting';
+const localComputerPlayer = () => window.DECKSONA_LOCAL_PLAYER.findLocalPlayer(state.players, desktopAudio?.clientId);
+const localComputerId = () => window.DECKSONA_LOCAL_PLAYER.localPlayerId(state.players, desktopAudio?.clientId);
+const desktopAudio = window.createDesktopAudio?.({ onStatus: ({ status, detail }) => {
+  localAudioState = status;
+  const labels = { disabled: 'Local audio is off.', connecting: 'Connecting local audio…', ready: 'This computer is ready · system default speakers or headphones', reconnecting: 'Local audio is reconnecting…', pairing: detail, error: detail };
+  $('localAudioStatus').textContent = labels[status] || detail;
+  if (status === 'error' || status === 'pairing') message(detail, status === 'error');
+  renderPlayers();
+} });
+async function startDesktopAudio() {
+  if (!desktopAudio || !window.retro.getAudioConfig) return;
+  const config = await window.retro.getAudioConfig();
+  // Do not block the library or remote outputs while local audio reconnects.
+  desktopAudio.start(config).catch(error => message(error.message, true));
+  if (!state.playerId && config.enabled) state.playerId = desktopAudio.clientId;
+}
+window.addEventListener('beforeunload', () => desktopAudio?.stop());
 
 function applyTheme(themeId) {
-  const theme = THEMES.find(item => item.id === themeId) || THEMES[0];
+  const theme = THEMES.find(item => item.id === themeId) || THEMES.find(item => item.id === 'phosphor-glass');
   selectedThemeId = theme.id;
   const root = document.documentElement;
-  root.style.setProperty('--skin-background', theme.background);
-  root.style.setProperty('--skin-panel', theme.panel);
-  root.style.setProperty('--skin-screen', theme.screen);
-  root.style.setProperty('--skin-accent', theme.accent);
-  root.style.setProperty('--skin-secondary', theme.secondary);
-  root.style.setProperty('--skin-border', theme.border);
-  root.dataset.pattern = theme.pattern;
+  window.DECKSONA_SKINS.apply(root, theme);
   document.querySelectorAll('.theme-card').forEach(card => {
     const active = card.dataset.themeId === theme.id;
     card.classList.toggle('selected', active);
@@ -35,20 +47,12 @@ function buildThemePicker() {
   const grid = $('themeGrid');
   const fragment = document.createDocumentFragment();
   for (const theme of THEMES) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'theme-card';
-    button.dataset.themeId = theme.id;
-    button.dataset.pattern = theme.pattern;
-    button.title = theme.description;
-    button.style.setProperty('--swatch-panel', theme.panel);
-    button.style.setProperty('--swatch-screen', theme.screen);
-    button.style.setProperty('--swatch-accent', theme.accent);
-    button.style.setProperty('--swatch-border', theme.border);
-    const swatch = document.createElement('span'); swatch.className = 'theme-swatch';
-    const name = document.createElement('span'); name.className = 'theme-name'; name.textContent = theme.name;
-    button.append(swatch, name);
-    button.addEventListener('click', async () => {
+    if (theme === THEMES[0] || theme === CLASSIC_THEMES[0]) {
+      const heading = document.createElement('h3'); heading.className = 'theme-group-label';
+      heading.textContent = theme.signature ? 'LISTENING ROOMS · 21 SIGNATURE DESIGNS' : 'CLASSIC PALETTES · 36 ORIGINAL SKINS';
+      fragment.append(heading);
+    }
+    const button = window.DECKSONA_SKINS.createCard(document, theme, async () => {
       applyTheme(theme.id);
       try { await window.retro.selectTheme(theme.id); message(`SKIN · ${theme.name.toUpperCase()}`); }
       catch (error) { message(error.message, true); }
@@ -201,10 +205,18 @@ function renderPlayers() {
   const select = $('playerSelect');
   const previous = state.playerId;
   select.replaceChildren();
-  const placeholder = new Option('Select an output', '');
+  const placeholder = new Option('Select a player', '');
   select.add(placeholder);
-  for (const player of state.players.filter(p => p.enabled !== false)) {
-    select.add(new Option(`${player.name}${player.available === false ? ' (offline)' : ''}`, player.player_id));
+  const local = localComputerPlayer();
+  for (const player of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players, desktopAudio?.clientId)) {
+    const name = player === local ? 'This computer · Decksona' : player.name;
+    select.add(new Option(`${name}${player.needs_setup ? ' (setup required)' : player.available === false ? ' (offline)' : ''}`, player.player_id));
+  }
+  if (desktopAudio?.clientId && !local) {
+    const label = { connecting: 'connecting…', ready: 'waiting for server…', reconnecting: 'reconnecting…', pairing: 'pairing required · see Settings', error: 'unavailable · see Settings' }[localAudioState] || 'unavailable · see Settings';
+    const pending = new Option(`This computer · ${label}`, desktopAudio.clientId);
+    pending.disabled = true;
+    select.add(pending, 1);
   }
   select.value = previous;
 }
@@ -292,31 +304,43 @@ function renderList(id, items, kind, empty) {
   target.append(fragment);
 }
 function renderQueue() {
+  sessions.update();
   $('queueCount').textContent = `${state.items.length} ITEMS`;
   renderList('queue', state.items, 'queue', state.connected ? 'The queue is empty.' : 'Your queue will appear here.');
 }
 async function refresh() {
   if (!state.connected || state.refreshing || draggedQueueItem || movingQueueItem) return;
   state.refreshing = true;
+  let refreshPlayerId = state.playerId;
   try {
     const [players, queues] = await Promise.all([window.retro.command('players'), window.retro.command('queues')]);
+    if (state.playerId !== refreshPlayerId) return;
     state.players = Array.isArray(players) ? players : [];
     state.queues = Array.isArray(queues) ? queues : [];
-    if (!state.playerId || !state.players.some(p => p.player_id === state.playerId)) {
+    if (state.playerId === desktopAudio?.clientId && localComputerPlayer()) {
+      state.playerId = localComputerId();
+      await window.retro.selectPlayer(state.playerId);
+    }
+    if (!state.playerId || (!state.players.some(p => p.player_id === state.playerId) && state.playerId !== desktopAudio?.clientId)) {
       state.playerId = state.players.find(p => p.available !== false)?.player_id || state.players[0]?.player_id || '';
       if (state.playerId) await window.retro.selectPlayer(state.playerId);
     }
-    state.player = state.players.find(p => p.player_id === state.playerId) || null;
-    state.queue = state.queues.find(q => q.queue_id === state.playerId) || null;
-    state.items = state.queue ? await window.retro.command('items', { queue_id: state.playerId, limit: 200, offset: 0 }) : [];
-    if (!Array.isArray(state.items)) state.items = [];
+    refreshPlayerId = state.playerId;
+    const player = state.players.find(p => p.player_id === refreshPlayerId) || null;
+    const queue = state.queues.find(q => q.queue_id === refreshPlayerId) || null;
+    const items = queue ? await window.retro.command('items', { queue_id: refreshPlayerId, limit: 200, offset: 0 }) : [];
+    if (state.playerId !== refreshPlayerId) return;
+    state.player = player; state.queue = queue; state.items = Array.isArray(items) ? items : [];
     renderPlayers(); renderPlayer(); renderQueue();
     if ($('message').textContent === 'CONNECTING…') message('CONNECTED');
   } catch (error) { message(error.message, true); }
-  finally { state.refreshing = false; }
+  finally { state.refreshing = false; if (state.playerId !== refreshPlayerId) await refresh(); }
 }
 async function act(name, args = {}) {
-  if (!state.playerId) { message('Select an output first.', true); return; }
+  if (!state.playerId) { message('Select a player first.', true); return; }
+  if (state.playerId === localComputerId() && (!state.player?.available || state.player?.needs_setup)) {
+    message('This computer is not ready yet. Check local audio in Connection settings.', true); return;
+  }
   try { await window.retro.command(name, args); await refresh(); }
   catch (error) { message(error.message, true); }
 }
@@ -400,9 +424,10 @@ async function search() {
 }
 async function connect() {
   try {
-    const saved = await window.retro.saveSettings({ serverUrl: $('serverUrl').value, token: $('token').value, playerId: state.playerId });
+    const saved = await window.retro.saveSettings({ serverUrl: $('serverUrl').value, token: $('token').value, playerId: state.playerId, localAudio: $('localAudio').checked, sendspinUrl: $('sendspinUrl').value });
     state.connected = true;
     state.playerId = saved.playerId;
+    await startDesktopAudio();
     $('token').value = '';
     $('settingsDialog').close();
     message(saved.tokenSaved ? 'CONNECTED · TOKEN SAVED SECURELY' : 'CONNECTED · TOKEN HELD FOR THIS SESSION');
@@ -416,8 +441,10 @@ async function init() {
   state.connected = Boolean(saved.serverUrl && saved.hasToken);
   state.playerId = saved.playerId;
   $('serverUrl').value = saved.serverUrl;
+  $('localAudio').checked = saved.localAudio !== false;
+  $('sendspinUrl').value = saved.sendspinUrl || '';
   $('tokenHint').textContent = saved.hasToken ? 'A saved token is available. Leave blank to keep using it.' : 'The token is encrypted when the operating system supports secure storage.';
-  if (state.connected) { message('CONNECTING…'); await refresh(); }
+  if (state.connected) { message('CONNECTING…'); await startDesktopAudio(); await refresh(); }
   else $('settingsDialog').showModal();
 }
 
@@ -472,7 +499,7 @@ document.querySelectorAll('[data-search-type]').forEach(button => {
     search();
   });
 });
-$('playerSelect').addEventListener('change', async event => { state.playerId = event.target.value; await window.retro.selectPlayer(state.playerId); await refresh(); });
+$('playerSelect').addEventListener('change', async event => { await selectSessionPlayer(event.target.value); });
 for (const [id, name] of [['previous', 'previous'], ['playPause', 'playPause'], ['stop', 'stop'], ['next', 'next']]) {
   $(id).addEventListener('click', () => act(name, { queue_id: state.playerId }));
 }
@@ -494,6 +521,8 @@ document.addEventListener('keydown', event => {
   if (event.code === 'ArrowRight') act(event.shiftKey ? 'skip' : 'next', { queue_id: state.playerId, ...(event.shiftKey ? { seconds: 10 } : {}) });
   if (event.code === 'ArrowLeft') act(event.shiftKey ? 'skip' : 'previous', { queue_id: state.playerId, ...(event.shiftKey ? { seconds: -10 } : {}) });
 });
+async function selectSessionPlayer(id) { state.playerId=id; state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();await window.retro.selectPlayer(id);await refresh(); }
+const sessions = window.createPlayerSession({state,command:(name,args)=>window.retro.command(name,args),select:selectSessionPlayer,refresh,notify:message,formatPlayerName:player=>player.player_id===localComputerId()?'This computer · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,desktopAudio?.clientId)});
 setInterval(renderProgress, 1000);
 setInterval(refresh, 5000);
 buildThemePicker();

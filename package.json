@@ -4,16 +4,30 @@
   "private": true,
   "main": "main.js",
   "scripts": {
+    "build:audio": "node scripts/build-audio.cjs",
+    "precheck:skins": "npm run build:audio",
+    "prepreview:skins": "npm run build:audio",
+    "check:audio": "npm run build:audio && electron scripts/verify-audio.cjs",
+    "check:web-audio": "npm run build:audio && electron scripts/verify-web-audio.cjs",
+    "prestart": "npm run build:audio",
+    "predist:win": "npm run build:audio",
+    "predist:win:installer": "npm run build:audio",
+    "predist:mac": "npm run build:audio",
     "start": "electron .",
     "web": "node web/server.js",
-    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --test tests/*.test.js",
+    "preweb": "npm run build:audio",
+    "sync:skins": "node scripts/build-skins.js",
+    "check:skins": "electron scripts/verify-skins.cjs",
+    "preview:skins": "electron scripts/verify-skins.cjs --generate-previews",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check themes.js && node --test tests/*.test.js",
     "dist:win": "electron-builder --win portable",
     "dist:win:installer": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac dmg"
   },
   "devDependencies": {
     "electron": "^39.0.0",
-    "electron-builder": "^26.0.0"
+    "electron-builder": "^26.0.0",
+    "esbuild": "0.28.2"
   },
   "build": {
     "appId": "com.decksona.player",
@@ -26,6 +40,13 @@
       "style.css",
       "api.js",
       "themes.js",
+      "player-session.js",
+      "local-audio-config.js",
+      "local-player.js",
+      "desktop-audio.bundle.js",
+      "themes.css",
+      "skins/**",
+      "skin-previews/**",
       "assets/**"
     ],
     "win": {
@@ -33,7 +54,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico"
@@ -47,5 +70,8 @@
   "description": "A retro desktop player for Music Assistant",
   "allowScripts": {
     "electron@39.8.10": true
+  },
+  "dependencies": {
+    "@sendspin/sendspin-js": "6.0.0"
   }
 }

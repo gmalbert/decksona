@@ -1,17 +1,19 @@
 # Decksona for iPhone and Android
 
-This folder contains a phone-sized web version of Decksona. It talks directly to Music Assistant over its WebSocket API and controls the Music Assistant players you already use. It does not stream audio from the phone.
+This folder contains a phone-sized web version of Decksona. It can play Music Assistant audio through the phone’s speaker or headphones using its own Sendspin player, and control your other Music Assistant players. It keeps the same Decksona branding and skins and can launch from your Home Screen without an app store.
 
 ## Install on your home network
 
 Home Assistant can serve these files from its existing web server, so no extra computer or terminal window needs to stay open.
 
 1. In the Home Assistant configuration folder, create `www/decksona`.
-2. Copy everything inside this repository's `web/` folder into `www/decksona/`, keeping `index.html`, `app.js`, `style.css`, `themes.js`, the manifest, and both icons together. Use the File Editor or your existing Home Assistant file share.
+2. Copy everything inside this repository's `web/` folder into `www/decksona/`, including **`audio.bundle.js`**, `index.html`, `app.js`, `style.css`, `themes.js`, `themes.css`, the entire `skins/` and `skin-previews/` folders, the manifest, and both icons. The audio bundle ships with the web folder; run `npm run build:audio` when rebuilding it from source.
 3. If this is the first time you created the `www` folder, restart Home Assistant once.
-4. On your phone's home Wi-Fi, open `http://HOME_ASSISTANT_IP:8123/local/decksona/` in its browser. Replace `HOME_ASSISTANT_IP` with Home Assistant's local network address.
+4. On your phone's home Wi-Fi, open `http://HOME_ASSISTANT_IP:8123/local/decksona/index.html` in its browser. Replace `HOME_ASSISTANT_IP` with Home Assistant's local network address. The explicit filename is required because Home Assistant does not serve a directory index.
 5. In Decksona, enter the Music Assistant address, such as `http://MUSIC_ASSISTANT_IP:8095`, and a long-lived access token from **Music Assistant → Settings → Profile**.
-6. Select a player output. The Player, Library, and Queue tabs provide playback controls, search and artist → album → song browsing, and queue reordering. Connection and appearance settings are saved by the browser on that phone.
+6. Tap **Listen on this phone** on the Player tab. This creates and selects **This phone · Decksona**. If Music Assistant marks the new Decksona player **Setup required**, approve guest/unpaired playback or pair it once in Music Assistant; Decksona displays any requested pairing code. Search the Library and play a track. Other speakers remain available in the player selector.
+
+Phone audio uses the same server hostname on port **8927**, independently of the control API port. Under **Settings → Advanced phone audio**, enter a different Sendspin `ws://` or `wss://` address if needed. The phone and server must be on a network that allows that connection, and the Music Assistant server must support the current encrypted Sendspin protocol. Safari uses lossless PCM without WebCodecs, WASM, or an HTTPS certificate. For an HTTPS-hosted Decksona page, the audio endpoint must use reachable **wss://**; an HTTPS API URL alone does not provide it.
 
 ## Add it to the home screen
 
@@ -24,10 +26,28 @@ The phone must be able to reach both Home Assistant and Music Assistant on the s
 
 ## Controls and limitations
 
-The web version includes the desktop Decksona controls: player selection, play/pause, stop, next/previous, ten-second skip, seeking, volume, shuffle, repeat, library search filters, artist and album browsing, add/play queue actions, upcoming-track reordering, and all 36 skins. It is a remote control for Music Assistant outputs, just like the desktop app. Audio continues on the selected Music Assistant player; the phone browser does not become an audio output. iOS and Android can pause a backgrounded page's refresh timer, so the player state refreshes when you return to the app.
+The web version includes player selection, play/pause, stop, next/previous, ten-second skip, seeking, volume, shuffle, repeat, library search filters, artist and album browsing, add/play queue actions, upcoming-track reordering, and all 57 skins. Tap **SKINS** to browse the gallery. Switching the viewed player does not disconnect phone audio; **Move music…** explicitly transfers an existing queue between devices.
+
+Safari requires a real tap to activate audio after opening/reloading the app; Decksona does not autoplay on launch. Use **Listen on this phone** or **Resume phone audio**. The player retains its identity and reconnects after network interruptions. **Settings → Phone audio → Turn off** releases the audio output. Disconnect also stops audio and removes the saved API token.
+
+Audio uses a media element with the playback audio-session category when available, with Media Session track metadata and transport controls on supported browsers. Keep the Home Screen app open while listening. iOS may suspend web audio or networking when the screen locks, the app backgrounds, or a call interrupts playback; uninterrupted lock-screen playback has not been verified on a physical iPhone. Return to Decksona and tap **Resume phone audio** if needed. Player state refreshes when you return.
 
 The browser must be able to reach Music Assistant at the address you enter. Music Assistant's local `http://...:8095` address works with this local HTTP setup. Remote use outside your home network is not configured by this no-certificate version.
 
 ## Preview from the repository
 
 For a quick preview on the computer, run `npm run web` from the repository folder and open `http://localhost:8787`. The server binds to all network interfaces and prints the computer's Wi-Fi address too, but Home Assistant hosting is the recommended way to keep the phone shortcut available without a computer terminal left open. Set `DECKSONA_WEB_PORT` to choose another preview port.
+
+## Updating an existing installation
+
+Copy the updated contents of `web/` over the existing `www/decksona/` files, including **`audio.bundle.js`, `local-player.js`, `version.json`, `themes.css`, and the complete `skins/` and `skin-previews/` folders**. Home Assistant caches static files for 31 days, so an ordinary close/reopen may retain old HTML. Use the app’s **Reload** update notice, or open `index.html?v=phone-width-6` to bypass an older cached page. The manifest launches this fresh URL; scripts and styles also have versioned URLs. Connection and skin preferences are kept on the same origin; clearing Safari data is unnecessary.
+
+The app checks `version.json` without caching on launch and when it becomes visible. If a newer build exists, it offers **Reload**. Checking for an update does not stop audio; choosing Reload restarts the page and requires tapping to enable phone audio again. Keep the `WEB_BUILD` constant in `app.js` and `version.json` in sync when releasing future web updates, and update resource URL versions in `index.html`.
+
+For a loopback-only integration check, install `aiosendspin==10.3.0 av==19.0.2` into `output/audio-test-python` as described in the main README, then run `npm run check:web-audio`. This verifies encrypted PCM playback through the real mobile media-element path, player/queue targeting, reconnects, and cleanup in Chromium with an iPhone user agent. It does not replace physical Safari/iPhone testing. Results are in `output/web-audio-report.json`; test audio is muted.
+
+## Player selection and moving music
+
+Player lists pin **This phone · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. **Move music…** uses the same order and excludes the source and offline players.
+
+The **Player** selector switches which device you view and control; each device keeps its own queue. The queue shows its player name and track count. To continue the same listening session on another device, choose **Move music…**, select a destination, and press **Move music here**. This transfers the queue and current track position, replacing the destination queue. Playing music continues; paused music stays paused. Unavailable players are excluded.

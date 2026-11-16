@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('retro', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  getAudioConfig: () => ipcRenderer.invoke('audio:config'),
   saveSettings: input => ipcRenderer.invoke('settings:save', input),
   selectPlayer: id => ipcRenderer.invoke('settings:player', id),
   selectTheme: id => ipcRenderer.invoke('settings:theme', id),

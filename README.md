@@ -2,7 +2,7 @@
 
 ![Decksona wordmark](assets/wordmark.svg)
 
-Decksona is its own interface, not a window around the Music Assistant frontend. It controls Music Assistant players on your network, with a main deck, queue editor, library search, transport controls, seek, shuffle, repeat, volume, and output selection. **Library** and **Queue** buttons show or hide either panel. **Compact** hides both panels and shrinks the window; **Expand** restores the full layout. **Skins** opens a picker with 36 combinations of six color palettes and six surface overlays; the selection is saved locally.
+Decksona is its own interface, not a window around the Music Assistant frontend. It controls Music Assistant players on your network, with a main deck, queue editor, library search, transport controls, seek, shuffle, repeat, volume, and output selection. **Library** and **Queue** buttons show or hide either panel. **Compact** hides both panels and shrinks the window; **Expand** restores the full layout. **Skins** opens a visual picker with **21 signature listening rooms** and the original 36 palette/overlay combinations (57 skins total); the selection is saved locally. Signature skins include Vinyl Lounge, Liquid Chrome, Moss & Mist, Cosmic Drift, Jellybean, Porcelain, Tape Archive, Space Age Stereo, Jazz After Hours, Tidepool, Art Nouveau, Kyoto Listening Room, Stained Glass, Midnight Diner, Field Notes, Obsidian & Gold, Aurora Glass, Arcade Candy, Saddle & Sound, Clockwork, and Desert Modern. Each has its own decorative surface, artwork shape, typography, and controls. All 21 are included in both desktop and web versions.
 
 ## Run on Windows or macOS
 
@@ -17,7 +17,7 @@ For a standalone Windows executable that does not need installation, run `npm ru
 
 ## iPhone and Android web app
 
-The repository's [`web/`](web/README.md) folder contains a phone-sized version that can be added to an iPhone or Android home screen. It uses the same player, search, queue, and skin features, with no native app install or HTTPS certificate. Copy its files to Home Assistant's `www/decksona` folder, then open `http://HOME_ASSISTANT_IP:8123/local/decksona/` on your phone. Home Assistant serves the files, so no extra computer has to stay open.
+The repository's [`web/`](web/README.md) folder contains a phone-sized version that can be added to an iPhone or Android home screen. It uses the same player, search, queue, and skin features, with no native app install or HTTPS certificate. Copy its files to Home Assistant's `www/decksona` folder, then open `http://HOME_ASSISTANT_IP:8123/local/decksona/index.html` on your phone. Home Assistant serves the files, so no extra computer has to stay open.
 
 ## Connect
 
@@ -32,7 +32,21 @@ The app stores the token encrypted through Electron's operating-system secure st
 
 ## Local computer audio
 
-This release controls Music Assistant output devices. To play through the Windows or Mac computer itself, install the [official Music Assistant desktop companion](https://github.com/music-assistant/desktop-app) as a background Sendspin output, then select that output in Decksona. The companion's window does not need to be your music interface. Direct Sendspin output inside Decksona is planned for a later release.
+Decksona includes its own Sendspin audio player on Windows and macOS. In Connection settings, leave **Play audio on this computer** enabled, then select **This computer · Decksona** in the player selector. Audio plays through the operating system’s default speakers or headphones. No browser or separate companion app is needed; all Decksona skins, queue controls, and library features remain available. Your Music Assistant server must stay running.
+
+The audio connection uses `ws://YOUR_SERVER_IP:8927/sendspin` by default, separately from the authenticated control API on port 8095. Keep that port reachable on your local network. Under **Advanced audio connection**, supply a custom `ws://` or `wss://` Sendspin URL if needed. A remote web/API URL alone does not expose local Sendspin audio. This client uses the current encrypted Sendspin protocol; update Music Assistant if it cannot connect. Connection status appears in Connection settings, and the player automatically retries interrupted connections. If Music Assistant requests pairing, Decksona displays the code to enter in the server’s player setup. The computer retains its Sendspin identity across restarts.
+
+On servers that require approval, complete **Setup required** for the new Decksona player once in Music Assistant, choosing guest/unpaired playback or pairing. After setup, the desktop app works independently of that page.
+
+Closing the desktop window keeps Decksona and its audio running in the system tray (menu bar on macOS). Click the Decksona tray icon to reopen it, or choose **Quit Decksona** to stop playback and exit. If your system cannot create a tray icon, closing the window exits normally on Windows. Switching the player selector to another output changes which queue you control; use **Move music…** to transfer an existing session to this computer.
+
+`npm start` and desktop packaging commands build the bundled audio libraries automatically. The phone/web edition also includes an independent player: tap **Listen on this phone**, then play music through **This phone · Decksona**. See the [phone setup and browser limitations](web/README.md).
+
+### Listen on this phone
+
+**Listen on this phone** turns the phone running Decksona into a Music Assistant audio output, using its speaker, headphones, or connected Bluetooth audio device. Tap it once after opening the web app to enable phone audio and register/select **This phone · Decksona**. Then choose music in Library and play it, or use **Move music…** to transfer the current session to the phone. The button only prepares the phone as a player; it does not start a song. Browsers require a user tap to activate audio, especially on iPhone, so the same control can resume audio after reopening or interruption. See [phone setup and browser limitations](web/README.md).
+
+For the optional desktop audio integration check, install its isolated Python fixtures with `python -m pip install --target output/audio-test-python aiosendspin==10.3.0 av==19.0.2`, then run `npm run check:audio`. It starts loopback-only servers, uses a separate Electron profile, and verifies encrypted lossless audio decoding/scheduling, local output selection, background playback, identity persistence, and cleanup. Test audio is not connected to physical speakers. Results are written to `output/audio-report.json`.
 
 ## Keyboard
 
@@ -53,3 +67,17 @@ The app calls Music Assistant's authenticated `POST /api` endpoint. See the [Mus
 ## Project
 
 Decksona is a standalone Electron project for Windows and macOS. It does not depend on the Home Assistant configuration repository. The source code and branding assets live together in this repository.
+
+## Theme development
+
+`themes.js`, `themes.css`, and `skins/` define the shared theme catalog, styling, and local decorative SVG surfaces. After editing these, run `npm run sync:skins` to regenerate the surfaces and synchronize the standalone `web/` copy. No external fonts, image services, or build step are needed to use the skins. Existing saved skins are preserved.
+
+Run `npm run check` for syntax, theme parity, palette contrast, and API checks. Run `npm run check:skins` for Chromium rendering and interaction checks using a simulated Music Assistant connection; no real output devices are changed. This checks all 21 skins at four web widths (320, 390, 820, and 1100 pixels), desktop full/compact/mini modes, gallery selection and reload persistence, playback command dispatch, Library/Queue, and missing artwork. Screenshots and a report are written to `output/skin-previews/`.
+
+The skin gallery uses screenshots of the actual player, including sample album art, track details, transport, and output controls. Run `npm run preview:skins` after changing player styling to regenerate all 57 desktop and web previews. These are bundled in `skin-previews/` and `web/skin-previews/`. Each gallery includes an expandable selected-theme preview.
+
+## Player selection and moving music
+
+Player lists pin **This computer · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. The **Move music…** destination list uses the same order and excludes the source and offline players. Sorting changes only the displayed list; it does not change the selected queue or playback.
+
+The **Player** selector switches which device you view and control; each device keeps its own queue. The queue shows its player name and track count. To continue the same listening session on another device, choose **Move music…**, select a destination, and press **Move music here**. This transfers the queue and current track position, replacing the destination queue. Playing music continues; paused music stays paused. Unavailable players are excluded.

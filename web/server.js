@@ -7,7 +7,7 @@ const root = __dirname;
 const port = Number(process.env.DECKSONA_WEB_PORT || 8787);
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.webmanifest': 'application/manifest+json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml'
+  '.webmanifest': 'application/manifest+json; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml'
 };
 
 const server = http.createServer((request, response) => {
@@ -25,7 +25,7 @@ const server = http.createServer((request, response) => {
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self' ws: wss: https://musicbrainz.org https://www.wikidata.org https://en.wikipedia.org; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; media-src 'self' blob: data:; connect-src 'self' ws: wss: https://musicbrainz.org https://www.wikidata.org https://en.wikipedia.org; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
   });
   fs.createReadStream(file).pipe(response);
 });
