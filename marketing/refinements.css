@@ -323,3 +323,123 @@
 
 .marketing-more-skins { max-width:700px; padding:28px 0 60px; margin:0; color:#b9baa9; line-height:1.8; }
 .marketing-more-skins strong { display:block; margin-bottom:8px; color:#f0dfbf; font:25px Georgia,serif; }
+
+/* Keep explanatory copy readable while retaining compact labels inside player mockups. */
+.visual-caption { font-size:16px; line-height:1.5; }
+.phone-output-note { font-size:20px !important; }
+.phone-resume-note { max-width:430px; margin:15px 0 0; color:#c8c9bf; font-size:18px; line-height:1.75; }
+.phone-resume-note strong { color:#e9e7dc; }
+.phone-help-link { display:inline-block; margin-top:12px; color:var(--teal); font-size:18px; }
+.phone-help-link span { margin-left:5px; }
+.phone-setup-heading .eyebrow { font-size:16px; }
+.phone-steps strong { font-size:18px; }
+.phone-steps p { font-size:16px; }
+.phone-steps code { font-size:16px; }
+.phone-source-link { font-size:16px; }
+.phone-help-link-setup { margin-left:15px; }
+.phone-security { font-size:18px; }
+.marketing-theme-feature figcaption span:first-child { font-size:16px; }
+.marketing-theme-feature figcaption span:last-child { font-size:16px; }
+.marketing-themes-intro .skins-note { font-size:18px !important; }
+.marketing-more-skins { font-size:16px; }
+.help-page { min-height:70vh; padding:68px 32px 100px; }
+.help-intro { max-width:900px; padding:22px 0 45px; }
+.help-back { display:inline-block; margin-bottom:35px; color:var(--teal); font-size:16px; }
+.help-intro .eyebrow { font-size:16px; }
+.help-intro h1 { margin:15px 0 18px; font:500 clamp(48px,7vw,82px)/.98 var(--serif); letter-spacing:-.065em; }
+.help-intro h1 em { color:var(--teal); font-weight:400; }
+.help-intro>p:last-child { max-width:660px; margin:0; color:var(--muted); font-size:20px; line-height:1.75; }
+.help-content { max-width:900px; }
+.help-topic { display:grid; grid-template-columns:54px 1fr; gap:18px; padding:30px 0; border-top:1px solid var(--line-bright); }
+.help-topic .section-index { font-size:16px; }
+.help-topic h2 { margin:0 0 12px; font:500 clamp(24px,3vw,34px)/1.15 var(--serif); letter-spacing:-.04em; }
+.help-topic p { max-width:750px; margin:9px 0 0; color:#c1c2b8; font-size:18px; line-height:1.75; }
+.help-topic code { padding:2px 5px; background:#ffffff10; color:#e2dfd2; font-size:16px; overflow-wrap:anywhere; }
+.help-more { margin-top:20px; padding:24px; border:1px solid #70d9bd40; background:#151c17; }
+.help-more p { margin:0; color:#c1c2b8; font-size:18px; line-height:1.75; }
+.help-more p+p { margin-top:13px; }
+.help-more a { color:var(--teal); text-decoration:underline; text-underline-offset:3px; }
+
+@media(max-width:620px) {
+  .visual-caption { font-size:12px; }
+  .phone-output-note { font-size:16px !important; }
+  .phone-resume-note,.phone-help-link,.phone-steps p,.phone-source-link { font-size:16px; }
+  .phone-setup-heading .eyebrow,.phone-steps strong { font-size:14px; }
+  .phone-steps code,.phone-security { font-size:14px; }
+  .phone-help-link-setup { margin:12px 0 0; }
+  .marketing-theme-feature figcaption span:first-child,.marketing-theme-feature figcaption span:last-child { font-size:14px; }
+  .help-page { padding:48px 20px 72px; }
+  .help-intro { padding:15px 0 30px; }
+  .help-intro .eyebrow,.help-back { font-size:14px; }
+  .help-intro>p:last-child { font-size:18px; }
+  .help-topic { grid-template-columns:34px 1fr; gap:12px; padding:23px 0; }
+  .help-topic .section-index { font-size:14px; }
+  .help-topic p,.help-more p { font-size:16px; }
+  .help-topic code { font-size:14px; }
+  .help-more { padding:18px; }
+}
+
+/* Modestly enlarge supporting copy without letting it compete with headings. */
+.eyebrow,.section-index { font-size:15px; }
+.platform-note { font-size:15px; }
+.visual-caption { font-size:12px; }
+.hero-baseline { font-size:12px; }
+.manifesto-kicker { font-size:14px; }
+.section-heading .eyebrow,.skins-copy .eyebrow,.setup-heading .eyebrow { font-size:14px; }
+.section-intro,.skins-copy>p:not(.eyebrow),.marketing-themes-intro>p:not(.eyebrow):not(.skins-note) { font-size:15px; }
+.feature-number,.card-footnote { font-size:12px; }
+.feature-card>p { font-size:14px; }
+.phone-copy .eyebrow { font-size:14px; }
+.phone-output-note { font-size:15px !important; }
+.phone-resume-note,.phone-help-link { font-size:15px; }
+.phone-tabs span,.phone-steps li>span { font-size:12px; }
+.phone-setup-heading .eyebrow { font-size:12px; }
+.phone-steps strong { font-size:15px; }
+.phone-steps p,.phone-source-link { font-size:13px; }
+.phone-steps code { font-size:12px; }
+.phone-security { font-size:14px; }
+.phone-help-link-setup { margin-left:15px; }
+.marketing-theme-feature figcaption span:first-child { font-size:13px; }
+.marketing-theme-feature figcaption span:last-child { font-size:14px; }
+.marketing-themes-intro .skins-note { font-size:14px !important; }
+.marketing-more-skins { font-size:15px; }
+.setup-heading>p:last-child { font-size:14px; }
+.setup-step p { font-size:14px; }
+.setup-step code { font-size:12px; }
+.setup-step>a { font-size:14px; }
+.compat-note>span:nth-child(2),.compat-note>a { font-size:14px; }
+.site-footer>p,.footer-links { font-size:14px; }
+.footer-copyright { font-size:12px; }
+.closing-content .eyebrow { font-size:14px; }
+.closing-platforms { font-size:12px; }
+.closing-mark { width:52px; height:52px; display:block; margin:0 auto 22px; border:0; border-radius:0; object-fit:contain; }
+.help-back,.help-intro .eyebrow { font-size:14px; }
+.help-intro>p:last-child,.help-topic p,.help-more p { font-size:16px; }
+.help-topic .section-index { font-size:14px; }
+.help-topic code { font-size:13px; }
+
+@media(max-width:620px) {
+  .eyebrow,.section-index,.phone-copy .eyebrow { font-size:13px; }
+  .platform-note { font-size:13px; }
+  .hero-baseline { font-size:9px; }
+  .manifesto-kicker { font-size:12px; }
+  .section-heading .eyebrow,.skins-copy .eyebrow,.setup-heading .eyebrow { font-size:12px; }
+  .section-intro,.skins-copy>p:not(.eyebrow),.marketing-themes-intro>p:not(.eyebrow):not(.skins-note) { font-size:14px; }
+  .feature-number,.card-footnote { font-size:11px; }
+  .feature-card>p { font-size:13px; }
+  .phone-output-note { font-size:14px !important; }
+  .phone-resume-note,.phone-help-link,.phone-steps p,.phone-source-link { font-size:13px; }
+  .phone-setup-heading .eyebrow,.phone-steps li>span,.phone-tabs span { font-size:11px; }
+  .phone-steps strong { font-size:14px; }
+  .phone-steps code,.phone-security { font-size:12px; }
+  .phone-help-link-setup { margin:12px 0 0; }
+  .setup-heading>p:last-child { font-size:13px; }
+  .setup-step p { font-size:13px; }
+  .setup-step>a,.compat-note>a { font-size:13px; }
+  .compat-note>span:nth-child(2) { font-size:13px; }
+  .site-footer>p,.footer-links { font-size:12px; }
+  .footer-copyright { font-size:10px; }
+  .closing-platforms { font-size:11px; }
+  .help-intro>p:last-child,.help-topic p,.help-more p { font-size:15px; }
+  .help-topic code { font-size:12px; }
+}
