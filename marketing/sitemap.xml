@@ -4,4 +4,8 @@
     <loc>https://decksona.com/</loc>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://decksona.com/help.html</loc>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>

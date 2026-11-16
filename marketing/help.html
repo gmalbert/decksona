@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10130f">
+    <meta name="description" content="Decksona setup help and troubleshooting for Music Assistant connections, phone audio, and playback.">
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;650;700;750;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="refinements.css">
+    <title>Support &amp; troubleshooting — Decksona</title>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <div class="header-inner">
+        <a class="wordmark" href="index.html" aria-label="Decksona home"><img src="assets/icon.svg" alt=""><span>decksona<span class="wordmark-dot">.</span></span></a>
+        <button class="menu-toggle" aria-expanded="false" aria-label="Open navigation"><span></span><span></span></button>
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="index.html#features">Features</a>
+          <a href="index.html#skins">Make it yours</a>
+          <a href="index.html#phone-app">Phone app</a>
+          <a href="index.html#getting-started">Getting started</a>
+          <a class="nav-cta" href="https://github.com/gmalbert/decksona" target="_blank" rel="noreferrer">Explore on GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+    </header>
+    <main class="help-page">
+      <section class="help-intro section-wrap">
+        <a class="help-back" href="index.html#phone-app">← Back to Decksona</a>
+        <p class="eyebrow">SETUP, PLAYBACK &amp; CONNECTIONS</p>
+        <h1>Need a hand<br><em>getting in tune?</em></h1>
+        <p>Quick answers for connecting Decksona, listening on your phone, and picking up playback after an interruption.</p>
+      </section>
+      <section class="help-content section-wrap" aria-label="Decksona support topics">
+        <article class="help-topic" id="resume-phone-audio">
+          <span class="section-index">01</span>
+          <div><h2>Phone audio stopped or did not resume</h2>
+            <p>Phones require a tap to start or resume browser audio. Open Decksona and tap <strong>Listen on this phone</strong> or <strong>Resume phone audio</strong>. Decksona does not autoplay phone audio after the app opens or reloads.</p>
+            <p>On iPhone, iOS may pause web audio when the screen locks, the app goes to the background, or a call interrupts it. Return to Decksona and tap the resume control. Keep the app open while listening.</p>
+          </div>
+        </article>
+        <article class="help-topic" id="cannot-connect">
+          <span class="section-index">02</span>
+          <div><h2>Decksona cannot connect to Music Assistant</h2>
+            <p>Use Music Assistant’s direct server address, usually <code>http://MUSIC_ASSISTANT_IP:8095</code> on a home network. A Home Assistant ingress URL is not a direct Music Assistant address.</p>
+            <p>Create the long-lived access token in <strong>Music Assistant → Settings → Profile</strong>. Long-lived access tokens created in Home Assistant will not work. Confirm that the phone or computer can reach the Music Assistant server on the same network.</p>
+          </div>
+        </article>
+        <article class="help-topic" id="player-setup">
+          <span class="section-index">03</span>
+          <div><h2>A player says “Setup required”</h2>
+            <p>Open Music Assistant and complete the requested setup for the Decksona player. Depending on the server’s access settings, choose guest or unpaired playback, or pair the player with the code Decksona displays.</p>
+          </div>
+        </article>
+        <article class="help-topic" id="phone-network">
+          <span class="section-index">04</span>
+          <div><h2>The phone cannot open the web app</h2>
+            <p>Make sure Home Assistant is serving the files from <code>www/decksona</code>, and open the full address <code>http://HOME_ASSISTANT_IP:8123/local/decksona/index.html</code>. The phone and server must be on a Wi-Fi network that allows devices to reach each other.</p>
+            <p>This home-network setup uses HTTP. Keep it on trusted local Wi-Fi; do not expose the address or Music Assistant token to the public internet.</p>
+          </div>
+        </article>
+        <article class="help-topic" id="update-phone-app">
+          <span class="section-index">05</span>
+          <div><h2>The phone app still shows an older version</h2>
+            <p>Copy the latest contents of the repository’s <code>web/</code> folder over the existing Home Assistant <code>www/decksona/</code> files, including the skins and audio bundle. Use Decksona’s <strong>Reload</strong> update notice if it appears. Reopening the Home Screen shortcut may still use cached files.</p>
+          </div>
+        </article>
+        <div class="help-more">
+          <p>For full installation steps, browser limitations, and advanced phone-audio settings, see the <a href="https://github.com/gmalbert/decksona/blob/main/web/README.md" target="_blank" rel="noreferrer">phone app setup guide on GitHub ↗</a>.</p>
+          <p>Still stuck? <a href="https://github.com/gmalbert/decksona/issues" target="_blank" rel="noreferrer">Open a GitHub issue ↗</a> and include your device, browser, and what you were doing when the problem happened. Never include your access token.</p>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><a class="wordmark footer-wordmark" href="index.html"><img src="assets/icon.svg" alt=""><span>decksona<span class="wordmark-dot">.</span></span></a><p>A desktop and phone player for Music Assistant.<br>Made for listening, one track at a time.</p><div class="footer-links"><a href="index.html#phone-app">Phone app</a><a href="https://github.com/gmalbert/decksona" target="_blank" rel="noreferrer">GitHub ↗</a><a href="index.html">Decksona home ↑</a></div><span class="footer-copyright">© 2026 DECKSONA</span></footer>
+    <script src="script.js"></script>
+  </body>
+</html>
