@@ -46,3 +46,4 @@ html, body, main { width: 100%; min-width: 0; max-width: 100%; }
   #results .list-row { grid-template-columns: 22px minmax(0, 1fr) max-content; }
   .row-buttons button.browse-button, .row-buttons button:not(.browse-button) { width: 44px; height: 44px; padding: 0; }
 }
+.filters{grid-template-columns:repeat(5,minmax(0,1fr))}.offline-filter{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:9px!important;letter-spacing:.06em!important}.offline-filter input{accent-color:var(--accent)}

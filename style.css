@@ -36,3 +36,5 @@ html[data-pattern="circuit"] .deck::after,html[data-pattern="circuit"] .panel::a
 .local-audio-toggle { display: flex; align-items: center; gap: 8px; }
 .local-audio-toggle input[type="checkbox"] { width: auto; margin: 0; }
 #localAudioStatus { display: block; margin-bottom: 12px; }
+.offline-filter{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:9px!important;letter-spacing:.06em!important}.offline-filter input{margin:0;accent-color:#8fe0b5}
+.offline-filter input{width:auto!important;flex:none}

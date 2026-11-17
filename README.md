@@ -26,7 +26,7 @@ The repository's [`web/`](web/README.md) folder contains a phone-sized version t
 3. Start Decksona and enter the direct Music Assistant server URL and its token.
 4. Pick an output in the top player deck. Double-click search results to replace the queue and play, or click **+** to add one.
 
-Search filters toggle Tracks, Albums, Playlists, and Artists. Click an artist to browse albums, then click an album to see its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist rows open albums instead of starting playback.
+Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an artist to browse albums, then click an album to see its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist rows open albums instead of starting playback.
 
 The app stores the token encrypted through Electron's operating-system secure storage when available. Otherwise it keeps the token only until the app closes.
 
@@ -78,6 +78,6 @@ The skin gallery uses screenshots of the actual player, including sample album a
 
 ## Player selection and moving music
 
-Player lists pin **This computer · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. The **Move music…** destination list uses the same order and excludes the source and offline players. Sorting changes only the displayed list; it does not change the selected queue or playback.
+Player lists pin **This computer · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. Turn on **Hide offline** beside the player selector to remove offline players from the list; the preference is saved on this device. The **Move music…** destination list uses the same order and excludes the source and offline players. Sorting changes only the displayed list; it does not change the selected queue or playback.
 
 The **Player** selector switches which device you view and control; each device keeps its own queue. The queue shows its player name and track count. To continue the same listening session on another device, choose **Move music…**, select a destination, and press **Move music here**. This transfers the queue and current track position, replacing the destination queue. Playing music continues; paused music stays paused. Unavailable players are excluded.

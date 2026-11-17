@@ -46,6 +46,7 @@
       <section class="panel output-panel">
         <label for="playerSelect">PLAYER</label>
         <select id="playerSelect"><option value="">Connect to Music Assistant</option></select>
+        <label class="offline-filter"><input id="hideOfflinePlayers" type="checkbox"> HIDE OFFLINE</label>
         <div class="volume-wrap"><label for="volume">VOL</label><input id="volume" class="range" type="range" min="0" max="100" value="0" disabled><span id="volumeValue">--</span></div>
       </section>
       <section class="panel phone-audio-panel" aria-label="Phone playback">
@@ -65,7 +66,7 @@
           <button type="submit">FIND</button>
         </form>
         <div class="filters" aria-label="Search types">
-          <button data-filter="track" aria-pressed="true">TRACKS</button><button data-filter="album" aria-pressed="true">ALBUMS</button><button data-filter="playlist" aria-pressed="true">PLAYLISTS</button><button data-filter="artist" aria-pressed="true">ARTISTS</button>
+          <button data-filter="track" aria-pressed="true">TRACKS</button><button data-filter="album" aria-pressed="true">ALBUMS</button><button data-filter="playlist" aria-pressed="true">PLAYLISTS</button><button data-filter="artist" aria-pressed="true">ARTISTS</button><button data-filter="genre" aria-pressed="true">GENRES</button>
         </div>
         <div id="browseBar" class="browse-bar" hidden><button id="browseBack">‹ BACK</button><span id="browseLabel"></span></div>
         <div id="results" class="list"><div class="empty">Search your Music Assistant library.</div></div>
