@@ -1,0 +1,44 @@
+name: Check Electron upgrade on Windows
+
+on:
+  push:
+    branches: [codex/electron-security-windows-check]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run dist:win
+      - name: Open portable Decksona
+        shell: pwsh
+        run: |
+          $profileDir = Join-Path $env:RUNNER_TEMP 'decksona-smoke-profile'
+          $launcher = Start-Process -FilePath (Resolve-Path 'dist/Decksona.exe') -ArgumentList ('--user-data-dir="' + $profileDir + '"') -PassThru
+          try {
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              $window = Get-Process -Name Decksona -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*Decksona*' } | Select-Object -First 1
+              if ($window) {
+                Write-Output "Opened window: $($window.MainWindowTitle)"
+                exit 0
+              }
+              Start-Sleep -Seconds 2
+            }
+            throw 'Decksona did not open its main window.'
+          } finally {
+            Get-Process -Name Decksona -ErrorAction SilentlyContinue | Stop-Process -ErrorAction SilentlyContinue
+          }
+      - uses: actions/upload-artifact@v4
+        if: '!cancelled()'
+        with:
+          name: Decksona-Electron-45-Windows-x64
+          path: dist/Decksona.exe
+          if-no-files-found: error
