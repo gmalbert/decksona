@@ -5,7 +5,8 @@ let beforeMiniCompact = false;
 let draggedQueueItem = null;
 let movingQueueItem = false;
 let seeking = false;
-const searchTypes = new Set(['track', 'album', 'playlist', 'artist']);
+const searchTypes = new Set(['track', 'album', 'playlist', 'artist', 'genre']);
+let hideOfflinePlayers = localStorage.getItem('decksona.hideOfflinePlayers') === 'true';
 let searchRevision = 0;
 const browseHistory = [];
 let browseLabel = '';
@@ -208,7 +209,7 @@ function renderPlayers() {
   const placeholder = new Option('Select a player', '');
   select.add(placeholder);
   const local = localComputerPlayer();
-  for (const player of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players, desktopAudio?.clientId)) {
+  for (const player of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players, desktopAudio?.clientId, hideOfflinePlayers)) {
     const name = player === local ? 'This computer · Decksona' : player.name;
     select.add(new Option(`${name}${player.needs_setup ? ' (setup required)' : player.available === false ? ' (offline)' : ''}`, player.player_id));
   }
@@ -236,7 +237,7 @@ function makeRow(item, index, kind) {
   row.append(number, info, detail);
   if (kind === 'results') {
     const browse = item.media_type === 'artist' || item.media_type === 'album';
-    if (item.media_type !== 'artist') {
+    if (item.media_type !== 'artist' && item.media_type !== 'genre') {
       const add = document.createElement('button'); add.className = 'row-action'; add.textContent = '+'; add.title = 'Add to queue'; add.setAttribute('aria-label', `Add ${title(item)} to queue`);
       add.addEventListener('click', event => { event.stopPropagation(); playMedia(item, 'add'); });
       add.addEventListener('dblclick', event => event.stopPropagation());
@@ -248,7 +249,7 @@ function makeRow(item, index, kind) {
       row.append(open);
       row.addEventListener('click', event => { if (event.detail === 1) browseItem(item); });
       row.addEventListener('keydown', event => { if (event.target === row && event.key === 'Enter') { event.preventDefault(); browseItem(item); } });
-    } else row.addEventListener('dblclick', () => playMedia(item, 'replace'));
+    } else if (item.media_type !== 'genre') row.addEventListener('dblclick', () => playMedia(item, 'replace'));
   } else {
     const firstMovable = firstMovableQueueIndex(state.queue);
     const locked = index < firstMovable;
@@ -406,7 +407,7 @@ async function search() {
   if (!searchTypes.size) {
     state.results = [];
     renderList('results', [], 'results', 'Select at least one search type.');
-    message('SELECT TRACKS, ALBUMS, PLAYLISTS OR ARTISTS');
+    message('SELECT A SEARCH TYPE');
     return;
   }
   if (!query) { state.results = []; renderList('results', [], 'results', 'Search for music to begin.'); return; }
@@ -416,7 +417,7 @@ async function search() {
     const types = [...searchTypes];
     const data = await window.retro.command('search', { search_query: query, media_types: types, limit: 30, library_only: false });
     if (revision !== searchRevision) return;
-    const buckets = { track: 'tracks', album: 'albums', playlist: 'playlists', artist: 'artists' };
+    const buckets = { track: 'tracks', album: 'albums', playlist: 'playlists', artist: 'artists', genre: 'genres' };
     state.results = types.flatMap(type => Array.isArray(data?.[buckets[type]]) ? data[buckets[type]] : []);
     renderList('results', state.results, 'results', 'No matches found.');
     message(`${state.results.length} RESULTS`);
@@ -500,6 +501,13 @@ document.querySelectorAll('[data-search-type]').forEach(button => {
   });
 });
 $('playerSelect').addEventListener('change', async event => { await selectSessionPlayer(event.target.value); });
+$('hideOfflinePlayers').checked = hideOfflinePlayers;
+$('hideOfflinePlayers').addEventListener('change', async event => {
+  hideOfflinePlayers = event.target.checked;
+  localStorage.setItem('decksona.hideOfflinePlayers', String(hideOfflinePlayers));
+  if (hideOfflinePlayers && state.players.find(player => player.player_id === state.playerId)?.available === false) await selectSessionPlayer('');
+  renderPlayers();
+});
 for (const [id, name] of [['previous', 'previous'], ['playPause', 'playPause'], ['stop', 'stop'], ['next', 'next']]) {
   $(id).addEventListener('click', () => act(name, { queue_id: state.playerId }));
 }
@@ -522,7 +530,7 @@ document.addEventListener('keydown', event => {
   if (event.code === 'ArrowLeft') act(event.shiftKey ? 'skip' : 'previous', { queue_id: state.playerId, ...(event.shiftKey ? { seconds: -10 } : {}) });
 });
 async function selectSessionPlayer(id) { state.playerId=id; state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();await window.retro.selectPlayer(id);await refresh(); }
-const sessions = window.createPlayerSession({state,command:(name,args)=>window.retro.command(name,args),select:selectSessionPlayer,refresh,notify:message,formatPlayerName:player=>player.player_id===localComputerId()?'This computer · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,desktopAudio?.clientId)});
+const sessions = window.createPlayerSession({state,command:(name,args)=>window.retro.command(name,args),select:selectSessionPlayer,refresh,notify:message,formatPlayerName:player=>player.player_id===localComputerId()?'This computer · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,desktopAudio?.clientId,hideOfflinePlayers)});
 setInterval(renderProgress, 1000);
 setInterval(refresh, 5000);
 buildThemePicker();

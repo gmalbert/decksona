@@ -11,10 +11,10 @@ function localPlayerId(players, clientId) {
 }
 // Pin the local device, then show available players A–Z and offline players A–Z.
 // Copy before sorting so server state and the selected queue are not reordered.
-function orderedPlayers(players, clientId) {
+function orderedPlayers(players, clientId, hideOffline = false) {
   const local = findLocalPlayer(players, clientId);
   const names = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-  return (players || []).filter(player => player.enabled !== false && !(
+  return (players || []).filter(player => player.enabled !== false && !(hideOffline && player.available === false) && !(
     local && local.player_id !== clientId && player.player_id === clientId
   )).sort((a, b) => Number(b === local) - Number(a === local)
     || Number(a.available === false) - Number(b.available === false)

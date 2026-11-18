@@ -18,7 +18,8 @@ const commands = {
   moveItem: 'player_queues/move_item', transfer: 'player_queues/transfer', itemByUri: 'music/item_by_uri', artistAlbums: 'music/artists/artist_albums',
   albumTracks: 'music/albums/album_tracks', shuffle: 'player_queues/shuffle', repeat: 'player_queues/repeat', volume: 'players/cmd/volume_set'
 };
-const state = { base: '', token: '', socket: null, opening: null, serial: 0, pending: new Map(), playerId: '', players: [], queues: [], queue: null, player: null, items: [], results: [], filters: new Set(['track','album','playlist','artist']), history: [], browseLabel: '', refreshing: false, seeking: false, theme: 'phosphor-glass', messageTimer: 0 };
+const state = { base: '', token: '', socket: null, opening: null, serial: 0, pending: new Map(), playerId: '', players: [], queues: [], queue: null, player: null, items: [], results: [], filters: new Set(['track','album','playlist','artist','genre']), history: [], browseLabel: '', refreshing: false, seeking: false, theme: 'phosphor-glass', messageTimer: 0 };
+let hideOfflinePlayers = localStorage.getItem('decksona.hideOfflinePlayers') === 'true';
 function phoneClientId() { return phoneAudio?.clientId || localStorage.getItem('decksona.phonePlayerId') || ''; }
 function phonePlayerId() { return window.DECKSONA_LOCAL_PLAYER.localPlayerId(state.players, phoneClientId()); }
 let phoneAudioState = 'connecting';
@@ -296,7 +297,7 @@ function renderOutput() {
   renderPhoneAudioStatus();
   const select=$('playerSelect'); const old=state.playerId; select.replaceChildren(new Option(state.connected?'Select a player':'Connect to Music Assistant',''));
   const local=window.DECKSONA_LOCAL_PLAYER.findLocalPlayer(state.players,phoneClientId());
-  for(const p of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId())) select.add(new Option(`${p===local?'This phone · Decksona':p.name}${p.needs_setup?' · SETUP REQUIRED':p.available===false?' · OFFLINE':''}`,p.player_id));
+  for(const p of window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId(),hideOfflinePlayers)) select.add(new Option(`${p===local?'This phone · Decksona':p.name}${p.needs_setup?' · SETUP REQUIRED':p.available===false?' · OFFLINE':''}`,p.player_id));
   if(phonePlayerId() && !state.players.some(p=>p.player_id===phonePlayerId())) {
     const label={connecting:'connecting…',ready:'registering with server…',reconnecting:'reconnecting…',pairing:'pairing required · see Settings',error:'unavailable · see Settings'}[phoneAudioState]||'unavailable · see Settings';
     const pending=new Option(phoneAudio?.clientId?`This phone · ${label}`:'This phone · tap Listen to enable',phonePlayerId());pending.disabled=true;select.add(pending,1);
@@ -315,7 +316,7 @@ function row(item,index,kind) {
     if(item.media_type==='artist'||item.media_type==='album'){
       const open=document.createElement('button');open.className='browse-button';open.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/></svg>';open.setAttribute('aria-label',item.media_type==='artist'?'Show albums':'Show songs');open.title=item.media_type==='artist'?'Show albums':'Show songs';open.addEventListener('click',()=>browseItem(item));buttons.append(open);
     }
-    if(item.media_type!=='artist'){
+    if(item.media_type!=='artist'&&item.media_type!=='genre'){
       const add=document.createElement('button');add.textContent='+';add.setAttribute('aria-label','Add to queue');add.addEventListener('click',()=>playMedia(item,'add'));
       if(item.media_type==='track'){el.addEventListener('click',event=>{if(!event.target.closest('button'))playMedia(item,'replace');});el.addEventListener('dblclick',()=>playMedia(item,'replace'));}
       buttons.append(add);
@@ -369,7 +370,7 @@ async function search(){
   const query=$('searchInput').value.trim();state.history=[];state.browseLabel='';browseNav();
   if(!state.filters.size){state.results=[];renderList('results',[],'results','Choose at least one search type.');return;}
   if(!query){state.results=[];renderList('results',[],'results','Search your Music Assistant library.');$('resultCount').textContent='';return;}
-  try{const data=await request(commands.search,{search_query:query,media_types:[...state.filters],limit:30,library_only:false});const buckets={track:'tracks',album:'albums',playlist:'playlists',artist:'artists'};state.results=[...state.filters].flatMap(type=>Array.isArray(data?.[buckets[type]])?data[buckets[type]]:[]);renderList('results',state.results,'results','No matches found.');$('resultCount').textContent=`${state.results.length} RESULTS`;}
+  try{const data=await request(commands.search,{search_query:query,media_types:[...state.filters],limit:30,library_only:false});const buckets={track:'tracks',album:'albums',playlist:'playlists',artist:'artists',genre:'genres'};state.results=[...state.filters].flatMap(type=>Array.isArray(data?.[buckets[type]])?data[buckets[type]]:[]);renderList('results',state.results,'results','No matches found.');$('resultCount').textContent=`${state.results.length} RESULTS`;}
   catch(error){say(error.message,true);}
 }
 
@@ -395,6 +396,8 @@ $('searchForm').addEventListener('submit',event=>{event.preventDefault();search(
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{const type=button.dataset.filter;if(state.filters.has(type))state.filters.delete(type);else state.filters.add(type);button.setAttribute('aria-pressed',String(state.filters.has(type)));search();}));
 $('browseBack').addEventListener('click',()=>{const previous=state.history.pop();if(!previous)return;state.results=previous.items;state.browseLabel=previous.label;browseNav();renderList('results',state.results,'results','No results.');$('resultCount').textContent=`${state.results.length} RESULTS`;});
 $('playerSelect').addEventListener('change',async event=>{await selectSessionPlayer(event.target.value);});
+$('hideOfflinePlayers').checked=hideOfflinePlayers;
+$('hideOfflinePlayers').addEventListener('change',async event=>{hideOfflinePlayers=event.target.checked;localStorage.setItem('decksona.hideOfflinePlayers',String(hideOfflinePlayers));if(hideOfflinePlayers&&state.players.find(player=>player.player_id===state.playerId)?.available===false)await selectSessionPlayer('');renderOutput();});
 for(const button of document.querySelectorAll('[data-command]'))button.addEventListener('click',()=>act(button.dataset.command,{queue_id:state.playerId}));
 for(const button of document.querySelectorAll('[data-seconds]'))button.addEventListener('click',()=>act('skip',{queue_id:state.playerId,seconds:Number(button.dataset.seconds)}));
 $('playPause').addEventListener('click',()=>act('playPause',{queue_id:state.playerId}));
@@ -404,7 +407,7 @@ $('seek').addEventListener('input',()=>{state.seeking=true;});$('seek').addEvent
 $('volume').addEventListener('change',()=>act('volume',{player_id:state.playerId,volume_level:Number($('volume').value)}));
 
 function init(){
-  initSkins();const base=localStorage.getItem('decksona.server')||'';const token=localStorage.getItem('decksona.token')||'';
+  initSkins();$('hideOfflinePlayers').checked=hideOfflinePlayers;const base=localStorage.getItem('decksona.server')||'';const token=localStorage.getItem('decksona.token')||'';
   $('phoneSendspinUrl').value=localStorage.getItem('decksona.sendspinUrl')||'';
   if(localStorage.getItem('decksona.phoneAudio'))$('phoneAudioStatus').textContent='Tap Listen on this phone to enable audio again. Safari requires a tap after reopening.';
   state.playerId=localStorage.getItem('decksona.playerId')||'';
@@ -412,7 +415,7 @@ function init(){
   else $('settingsDialog').showModal();
 }
 async function selectSessionPlayer(id){state.playerId=id;state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();localStorage.setItem('decksona.playerId',id);await refresh();}
-const sessions=window.createPlayerSession({state,command:(name,args)=>request(commands[name],args),select:selectSessionPlayer,refresh,notify:say,formatPlayerName:player=>player.player_id===phonePlayerId()?'This phone · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId())});
+const sessions=window.createPlayerSession({state,command:(name,args)=>request(commands[name],args),select:selectSessionPlayer,refresh,notify:say,formatPlayerName:player=>player.player_id===phonePlayerId()?'This phone · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId(),hideOfflinePlayers)});
 setInterval(renderProgress,1000);setInterval(()=>{if(!document.hidden)refresh();},5000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate();});

@@ -48,6 +48,6 @@ For a loopback-only integration check, install `aiosendspin==10.3.0 av==19.0.2` 
 
 ## Player selection and moving music
 
-Player lists pin **This phone · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. **Move music…** uses the same order and excludes the source and offline players.
+Player lists pin **This phone · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. Turn on **Hide offline** beside the player selector to remove offline players from the list; the preference is saved on this device. **Move music…** uses the same order and excludes the source and offline players.
 
 The **Player** selector switches which device you view and control; each device keeps its own queue. The queue shows its player name and track count. To continue the same listening session on another device, choose **Move music…**, select a destination, and press **Move music here**. This transfers the queue and current track position, replacing the destination queue. Playing music continues; paused music stays paused. Unavailable players are excluded.
