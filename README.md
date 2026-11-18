@@ -6,7 +6,7 @@ Decksona is its own interface, not a window around the Music Assistant frontend.
 
 ## Run on Windows or macOS
 
-Check the [GitHub Releases page](https://github.com/gmalbert/decksona/releases) for a prebuilt download when one is available. Or build your own copy from source. First install Node.js 20 or newer using the [official Node.js download and installation instructions](https://nodejs.org/en/download), then run these commands from this folder:
+Check the [GitHub Releases page](https://github.com/gmalbert/decksona/releases) for a prebuilt download when one is available. Or build your own copy from source. First install Node.js 22.12 or newer using the [official Node.js download and installation instructions](https://nodejs.org/en/download), then run these commands from this folder:
 
 ```sh
 npm install
