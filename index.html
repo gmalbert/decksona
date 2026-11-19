@@ -35,10 +35,10 @@
       <div id="libraryPanel" class="panel library-panel">
         <div class="panel-heading"><span>LIBRARY SEARCH</span><div class="search-filters" role="group" aria-label="Search media types"><button type="button" data-search-type="track" aria-pressed="true">TRACKS</button><button type="button" data-search-type="album" aria-pressed="true">ALBUMS</button><button type="button" data-search-type="playlist" aria-pressed="true">PLAYLISTS</button><button type="button" data-search-type="artist" aria-pressed="true">ARTISTS</button><button type="button" data-search-type="genre" aria-pressed="true">GENRES</button></div></div>
         <form id="searchForm" class="search"><input id="searchInput" type="search" placeholder="Search your Music Assistant library…" autocomplete="off" aria-label="Search music"><button type="submit">FIND</button></form>
-        <div id="browseNavigation" class="browse-navigation" hidden><button id="browseBack" type="button">← BACK</button><span id="browseTitle"></span></div>
+        <div id="browseNavigation" class="browse-navigation" hidden><button id="browseBack" type="button">← BACK</button><span id="browseTitle"></span><div id="genreBrowseModes" class="genre-browse-modes" role="group" aria-label="Genre browse view" hidden><button id="genreArtists" type="button" aria-pressed="true">ARTISTS</button><button id="genreAlbums" type="button" aria-pressed="false">ALBUMS</button></div></div>
         <div class="list-head"><span>TITLE / ARTIST</span><span>TYPE</span></div>
         <div id="results" class="list results"><div class="empty">Search for music to begin.</div></div>
-        <div class="panel-footer">Click artists or albums to browse · Double-click songs to play · ＋ adds to queue</div>
+        <div class="panel-footer">Click artists, albums, or genres to browse · Double-click songs to play · ＋ adds to queue</div>
       </div>
       <div id="queuePanel" class="panel queue-panel">
         <div class="panel-heading"><span>PLAYLIST EDITOR</span><span id="queueCount" class="tiny">0 ITEMS</span></div>

@@ -84,7 +84,7 @@ async function command(name, args = {}) {
   if (!COMMANDS[name]) throw new Error('Unsupported command.');
   if (!settings.serverUrl || !sessionToken) throw new Error('Connect to Music Assistant first.');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks'].includes(name) ? 30000 : 12000);
+  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks', 'genreAlbums', 'genreTracks', 'genreArtists'].includes(name) ? 30000 : 12000);
   try {
     const response = await fetch(`${settings.serverUrl}/api`, {
       method: 'POST',

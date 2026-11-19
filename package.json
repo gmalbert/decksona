@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "build:audio": "node scripts/build-audio.cjs",
+    "dist:web": "npm run build:audio && node scripts/package-web.cjs",
     "precheck:skins": "npm run build:audio",
     "prepreview:skins": "npm run build:audio",
     "check:audio": "npm run build:audio && electron scripts/verify-audio.cjs",
@@ -25,7 +26,7 @@
     "dist:mac": "electron-builder --mac dmg"
   },
   "devDependencies": {
-    "electron": "^39.0.0",
+    "electron": "45.3.4",
     "electron-builder": "^26.0.0",
     "esbuild": "0.28.2"
   },
@@ -69,9 +70,13 @@
   },
   "description": "A retro desktop player for Music Assistant",
   "allowScripts": {
-    "electron@39.8.10": true
+    "electron@45.3.4": true,
+    "esbuild@0.28.2": true
   },
   "dependencies": {
     "@sendspin/sendspin-js": "6.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
