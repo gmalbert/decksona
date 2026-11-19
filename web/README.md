@@ -26,7 +26,7 @@ The phone must be able to reach both Home Assistant and Music Assistant on the s
 
 ## Controls and limitations
 
-The web version includes player selection, play/pause, stop, next/previous, ten-second skip, seeking, volume, shuffle, repeat, library search filters, artist and album browsing, add/play queue actions, upcoming-track reordering, and all 57 skins. Tap **SKINS** to browse the gallery. Switching the viewed player does not disconnect phone audio; **Move music…** explicitly transfers an existing queue between devices.
+The web version includes player selection, play/pause, stop, next/previous, ten-second skip, seeking, volume, shuffle, repeat, library search filters, genre browsing by artist or album, artist albums, album songs, add/play queue actions, upcoming-track reordering, and all 57 skins. Tap **SKINS** to browse the gallery. Switching the viewed player does not disconnect phone audio; **Move music…** explicitly transfers an existing queue between devices.
 
 Safari requires a real tap to activate audio after opening/reloading the app; Decksona does not autoplay on launch. Use **Listen on this phone** or **Resume phone audio**. The player retains its identity and reconnects after network interruptions. **Settings → Phone audio → Turn off** releases the audio output. Disconnect also stops audio and removes the saved API token.
 
@@ -36,11 +36,11 @@ The browser must be able to reach Music Assistant at the address you enter. Musi
 
 ## Preview from the repository
 
-For a quick preview on the computer, run `npm run web` from the repository folder and open `http://localhost:8787`. The server binds to all network interfaces and prints the computer's Wi-Fi address too, but Home Assistant hosting is the recommended way to keep the phone shortcut available without a computer terminal left open. Set `DECKSONA_WEB_PORT` to choose another preview port.
+For a quick preview on the computer, run `npm run web` from the repository folder and open `http://localhost:8787`. To create a complete deployment folder, run `npm run dist:web`; it builds the phone audio bundle and copies the full web edition into `dist/web/`. Copy that folder's contents into Home Assistant's `www/decksona/`. The preview server binds to all network interfaces and prints the computer's Wi-Fi address too, but Home Assistant hosting is the recommended way to keep the phone shortcut available without a computer terminal left open. Set `DECKSONA_WEB_PORT` to choose another preview port.
 
 ## Updating an existing installation
 
-Copy the updated contents of `web/` over the existing `www/decksona/` files, including **`audio.bundle.js`, `local-player.js`, `version.json`, `themes.css`, and the complete `skins/` and `skin-previews/` folders**. Home Assistant caches static files for 31 days, so an ordinary close/reopen may retain old HTML. Use the app’s **Reload** update notice, or open `index.html?v=phone-width-6` to bypass an older cached page. The manifest launches this fresh URL; scripts and styles also have versioned URLs. Connection and skin preferences are kept on the same origin; clearing Safari data is unnecessary.
+Copy the updated contents of `web/` over the existing `www/decksona/` files, including **`audio.bundle.js`, `local-player.js`, `version.json`, `themes.css`, and the complete `skins/` and `skin-previews/` folders**. Home Assistant caches static files for 31 days, so an ordinary close/reopen may retain old HTML. Use the app’s **Reload** update notice, or open `index.html?v=genre-browse-1` to bypass an older cached page. The manifest launches this fresh URL; scripts and styles also have versioned URLs. Connection and skin preferences are kept on the same origin; clearing Safari data is unnecessary.
 
 The app checks `version.json` without caching on launch and when it becomes visible. If a newer build exists, it offers **Reload**. Checking for an update does not stop audio; choosing Reload restarts the page and requires tapping to enable phone audio again. Keep the `WEB_BUILD` constant in `app.js` and `version.json` in sync when releasing future web updates, and update resource URL versions in `index.html`.
 

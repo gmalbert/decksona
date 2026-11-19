@@ -20,6 +20,9 @@ test('uses Music Assistant command names', () => {
   assert.equal(COMMANDS.playMedia, 'player_queues/play_media');
   assert.equal(COMMANDS.volume, 'players/cmd/volume_set');
   assert.equal(COMMANDS.skip, 'player_queues/skip');
+  assert.equal(COMMANDS.genreTracks, 'music/genres/tracks');
+  assert.equal(COMMANDS.genreAlbums, 'music/genres/albums');
+  assert.equal(COMMANDS.genreArtists, 'music/artists/library_items');
 });
 
 test('preserves all 36 classic skin and overlay combinations', () => {

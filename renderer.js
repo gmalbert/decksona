@@ -10,6 +10,9 @@ let hideOfflinePlayers = localStorage.getItem('decksona.hideOfflinePlayers') ===
 let searchRevision = 0;
 const browseHistory = [];
 let browseLabel = '';
+let genreBrowseItem = null;
+let genreBrowseMode = 'artists';
+let genreBrowseAtRoot = false;
 let selectedThemeId = 'phosphor-glass';
 const artworkCache = new Map();
 let localAudioState = 'connecting';
@@ -236,7 +239,7 @@ function makeRow(item, index, kind) {
   const detail = document.createElement('span'); detail.className = 'row-type'; detail.textContent = kind === 'results' ? String(item.media_type || 'track').toUpperCase() : duration(item) ? time(duration(item)) : '--:--';
   row.append(number, info, detail);
   if (kind === 'results') {
-    const browse = item.media_type === 'artist' || item.media_type === 'album';
+    const browse = item.media_type === 'artist' || item.media_type === 'album' || item.media_type === 'genre';
     if (item.media_type !== 'artist' && item.media_type !== 'genre') {
       const add = document.createElement('button'); add.className = 'row-action'; add.textContent = '+'; add.title = 'Add to queue'; add.setAttribute('aria-label', `Add ${title(item)} to queue`);
       add.addEventListener('click', event => { event.stopPropagation(); playMedia(item, 'add'); });
@@ -244,7 +247,8 @@ function makeRow(item, index, kind) {
       row.append(add);
     }
     if (browse) {
-      const open = document.createElement('button'); open.className = 'row-action'; open.textContent = '›'; open.title = item.media_type === 'artist' ? 'View albums' : 'View songs'; open.setAttribute('aria-label', `${open.title}: ${title(item)}`);
+      row.classList.add('browseable');
+      const open = document.createElement('button'); open.className = 'row-action'; open.textContent = '›'; open.title = item.media_type === 'artist' ? 'View albums' : item.media_type === 'genre' ? 'Browse genre' : 'View songs'; open.setAttribute('aria-label', `${open.title}: ${title(item)}`);
       open.addEventListener('click', event => { event.stopPropagation(); browseItem(item); });
       row.append(open);
       row.addEventListener('click', event => { if (event.detail === 1) browseItem(item); });
@@ -378,30 +382,80 @@ async function playMedia(item, option) {
 function renderBrowseNavigation() {
   $('browseNavigation').hidden = !browseHistory.length;
   $('browseTitle').textContent = browseLabel;
+  $('genreBrowseModes').hidden = !(genreBrowseAtRoot && genreBrowseItem);
+  $('genreArtists').setAttribute('aria-pressed', String(genreBrowseMode === 'artists'));
+  $('genreAlbums').setAttribute('aria-pressed', String(genreBrowseMode === 'albums'));
+}
+function setSearchTypes(types) {
+  searchTypes.clear();
+  for (const type of types) searchTypes.add(type);
+  document.querySelectorAll('[data-search-type]').forEach(button => {
+    button.setAttribute('aria-pressed', String(searchTypes.has(button.dataset.searchType)));
+  });
+}
+function saveBrowseState() {
+  return { label: browseLabel, items: state.results, searchTypes: [...searchTypes], genreBrowseItem, genreBrowseMode, genreBrowseAtRoot };
+}
+function genreIdFor(item) {
+  const uri = item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);
+  const id = Number(item.item_id || uri?.[2]);
+  return Number.isSafeInteger(id) ? id : null;
+}
+async function loadGenreMode(mode, item = genreBrowseItem) {
+  if (!item) return;
+  const genreId = genreIdFor(item);
+  if (genreId === null) { message('This genre has no library ID.', true); return; }
+  const revision = ++searchRevision;
+  const isArtists = mode === 'artists';
+  const listing = isArtists ? 'ARTISTS' : 'ALBUMS';
+  message(`LOADING ${listing} · ${title(item)}`);
+  try {
+    const data = await window.retro.command(isArtists ? 'genreArtists' : 'genreAlbums', isArtists ? { genre: genreId } : { item_id: String(genreId) });
+    if (revision !== searchRevision) return;
+    if (item !== genreBrowseItem) browseHistory.push(saveBrowseState());
+    genreBrowseItem = item;
+    genreBrowseMode = mode;
+    genreBrowseAtRoot = true;
+    setSearchTypes([isArtists ? 'artist' : 'album']);
+    browseLabel = `${title(item)} · ${listing}`;
+    const mediaType = isArtists ? 'artist' : 'album';
+    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || mediaType }));
+    renderBrowseNavigation();
+    renderList('results', state.results, 'results', isArtists ? 'No artists found for this genre.' : 'No albums found for this genre.');
+    message(`${state.results.length} ${listing}`);
+  } catch (error) { if (revision === searchRevision) message(error.message, true); }
 }
 async function browseItem(item) {
+  if (item.media_type === 'genre') { await loadGenreMode('artists', item); return; }
   const revision = ++searchRevision;
   const isArtist = item.media_type === 'artist';
   const uri = item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);
   const itemId = item.item_id || uri?.[2];
   const provider = item.provider || uri?.[1];
   if (!itemId || !provider) { message('This item has no library or provider reference.', true); return; }
-  message(`LOADING ${isArtist ? 'ALBUMS' : 'SONGS'} · ${title(item)}`);
+  const listing = isArtist ? 'ALBUMS' : 'SONGS';
+  message(`LOADING ${listing} · ${title(item)}`);
   try {
     const data = await window.retro.command(isArtist ? 'artistAlbums' : 'albumTracks', { item_id: String(itemId), provider_instance_id_or_domain: provider });
     if (revision !== searchRevision) return;
-    browseHistory.push({ label: browseLabel, items: state.results });
-    browseLabel = `${title(item)} · ${isArtist ? 'ALBUMS' : 'SONGS'}`;
-    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || (isArtist ? 'album' : 'track') }));
+    browseHistory.push(saveBrowseState());
+    genreBrowseAtRoot = false;
+    setSearchTypes([isArtist ? 'album' : 'track']);
+    browseLabel = `${title(item)} · ${listing}`;
+    const mediaType = isArtist ? 'album' : 'track';
+    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || mediaType }));
     renderBrowseNavigation();
     renderList('results', state.results, 'results', isArtist ? 'No albums found for this artist.' : 'No songs found for this album.');
-    message(`${state.results.length} ${isArtist ? 'ALBUMS' : 'SONGS'}`);
+    message(`${state.results.length} ${listing}`);
   } catch (error) { if (revision === searchRevision) message(error.message, true); }
 }
 async function search() {
   const revision = ++searchRevision;
   browseHistory.length = 0;
   browseLabel = '';
+  genreBrowseItem = null;
+  genreBrowseMode = 'artists';
+  genreBrowseAtRoot = false;
   renderBrowseNavigation();
   const query = $('searchInput').value.trim();
   if (!searchTypes.size) {
@@ -487,16 +541,22 @@ $('browseBack').addEventListener('click', () => {
   if (!previous) return;
   browseLabel = previous.label;
   state.results = previous.items;
+  genreBrowseItem = previous.genreBrowseItem || null;
+  genreBrowseMode = previous.genreBrowseMode || 'artists';
+  genreBrowseAtRoot = Boolean(previous.genreBrowseAtRoot);
+  setSearchTypes(previous.searchTypes || [...searchTypes]);
   renderBrowseNavigation();
   renderList('results', state.results, 'results', 'No results.');
   message(`${state.results.length} RESULTS`);
 });
+$('genreArtists').addEventListener('click', () => loadGenreMode('artists'));
+$('genreAlbums').addEventListener('click', () => loadGenreMode('albums'));
 document.querySelectorAll('[data-search-type]').forEach(button => {
   button.addEventListener('click', () => {
     const type = button.dataset.searchType;
     if (searchTypes.has(type)) searchTypes.delete(type);
     else searchTypes.add(type);
-    button.setAttribute('aria-pressed', String(searchTypes.has(type)));
+    setSearchTypes([...searchTypes]);
     search();
   });
 });

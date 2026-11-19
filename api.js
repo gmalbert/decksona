@@ -8,6 +8,8 @@ const COMMANDS = Object.freeze({
   moveItem: 'player_queues/move_item', transfer: 'player_queues/transfer',
   itemByUri: 'music/item_by_uri',
   artistAlbums: 'music/artists/artist_albums', albumTracks: 'music/albums/album_tracks',
+  genreTracks: 'music/genres/tracks', genreAlbums: 'music/genres/albums',
+  genreArtists: 'music/artists/library_items',
   shuffle: 'player_queues/shuffle', repeat: 'player_queues/repeat',
   volume: 'players/cmd/volume_set'
 });

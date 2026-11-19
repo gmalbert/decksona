@@ -7,10 +7,10 @@
   <meta name="description" content="A pocket-sized Decksona player for Music Assistant.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest?v=phone-width-6">
+  <link rel="manifest" href="manifest.webmanifest?v=genre-browse-1">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=phone-width-6">
+  <link rel="stylesheet" href="style.css?v=genre-browse-1">
   <link rel="stylesheet" href="themes.css">
   <title>Decksona</title>
 </head>
@@ -68,7 +68,7 @@
         <div class="filters" aria-label="Search types">
           <button data-filter="track" aria-pressed="true">TRACKS</button><button data-filter="album" aria-pressed="true">ALBUMS</button><button data-filter="playlist" aria-pressed="true">PLAYLISTS</button><button data-filter="artist" aria-pressed="true">ARTISTS</button><button data-filter="genre" aria-pressed="true">GENRES</button>
         </div>
-        <div id="browseBar" class="browse-bar" hidden><button id="browseBack">‹ BACK</button><span id="browseLabel"></span></div>
+        <div id="browseBar" class="browse-bar" hidden><button id="browseBack">‹ BACK</button><span id="browseLabel"></span><div id="genreBrowseModes" class="browse-modes" hidden><button id="genreArtists" aria-pressed="true">ARTISTS</button><button id="genreAlbums" aria-pressed="false">ALBUMS</button></div></div>
         <div id="results" class="list"><div class="empty">Search your Music Assistant library.</div></div>
       </section>
     </section>
@@ -125,6 +125,6 @@
   <script src="player-session.js?v=phone-fix-5"></script>
   <script src="local-player.js?v=phone-fix-5"></script>
   <script src="audio.bundle.js?v=phone-fix-5"></script>
-  <script src="app.js?v=phone-width-6"></script>
+  <script src="app.js?v=genre-browse-1"></script>
 </body>
 </html>

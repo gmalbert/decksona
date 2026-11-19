@@ -26,7 +26,7 @@ The repository's [`web/`](web/README.md) folder contains a phone-sized version t
 3. Start Decksona and enter the direct Music Assistant server URL and its token.
 4. Pick an output in the top player deck. Double-click search results to replace the queue and play, or click **+** to add one.
 
-Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an artist to browse albums, then click an album to see its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist rows open albums instead of starting playback.
+Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an artist to browse albums, an album to see its songs, or a genre to browse its artists and albums. Choose Artists or Albums in the genre view; selecting an artist opens their albums, and selecting an album opens its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist and genre rows browse their contents instead of starting playback.
 
 The app stores the token encrypted through Electron's operating-system secure storage when available. Otherwise it keeps the token only until the app closes.
 

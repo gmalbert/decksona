@@ -31,6 +31,9 @@ html, body, main { width: 100%; min-width: 0; max-width: 100%; }
 .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .filters button { min-width: 0; }
 .browse-bar span { min-width: 0; flex: 1; }
+.browse-modes { display: flex; gap: 5px; }
+.browse-modes[hidden] { display: none; }
+.browse-modes button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .list-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) max-content max-content; width: 100%; min-width: 0; }
 .row-buttons { min-width: 0; }
 @media (max-width: 480px) {
