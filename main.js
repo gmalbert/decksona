@@ -3,7 +3,7 @@ const os = require('node:os');
 const { sendspinUrl } = require('./local-audio-config');
 const fs = require('node:fs');
 const path = require('node:path');
-const { COMMANDS, normalizeServerUrl, decodeResponse } = require('./api');
+const { COMMANDS, normalizeServerUrl, decodeHttpResponse } = require('./api');
 const { THEMES } = require('./themes');
 
 let settings = { serverUrl: '', playerId: '', encryptedToken: '', themeId: 'phosphor-glass', localAudio: true, sendspinUrl: '' };
@@ -84,7 +84,7 @@ async function command(name, args = {}) {
   if (!COMMANDS[name]) throw new Error('Unsupported command.');
   if (!settings.serverUrl || !sessionToken) throw new Error('Connect to Music Assistant first.');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks', 'genreAlbums', 'genreTracks', 'genreArtists'].includes(name) ? 30000 : 12000);
+  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks', 'genreAlbums', 'genreTracks', 'genreArtists', 'addRadio'].includes(name) ? 30000 : 12000);
   try {
     const response = await fetch(`${settings.serverUrl}/api`, {
       method: 'POST',
@@ -92,13 +92,7 @@ async function command(name, args = {}) {
       body: JSON.stringify({ message_id: String(++requestId), command: COMMANDS[name], args }),
       signal: controller.signal
     });
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Music Assistant rejected this token (HTTP 401). Create a fresh long-lived access token in Music Assistant → Settings → Profile, then paste the token only, without “Bearer”.');
-      }
-      throw new Error(`Music Assistant returned HTTP ${response.status}.`);
-    }
-    return decodeResponse(await response.json());
+    return await decodeHttpResponse(response);
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('The server did not respond in time.');
     throw error;

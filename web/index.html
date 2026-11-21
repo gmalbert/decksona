@@ -7,10 +7,10 @@
   <meta name="description" content="A pocket-sized Decksona player for Music Assistant.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest?v=genre-browse-1">
+  <link rel="manifest" href="manifest.webmanifest?v=radio-5">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=genre-browse-1">
+  <link rel="stylesheet" href="style.css?v=radio-1">
   <link rel="stylesheet" href="themes.css">
   <title>Decksona</title>
 </head>
@@ -24,7 +24,7 @@
     <section id="playerPage" class="page active" aria-label="Player">
       <article class="player-card">
         <div class="eyebrow"><span>NOW PLAYING</span><span id="playerState">READY</span></div>
-        <div class="art-stage"><img id="cover" class="cover" src="" alt="Album artwork" hidden><div class="art-empty"><strong>Decksona</strong><small>YOUR LISTENING ROOM</small></div></div>
+        <div class="art-stage"><img id="cover" class="cover" src="" alt="Album artwork" referrerpolicy="no-referrer" hidden><div class="art-empty"><strong>Decksona</strong><small>YOUR LISTENING ROOM</small></div></div>
         <div class="track-title" id="trackTitle">Connect to Music Assistant</div>
         <div class="track-artist" id="trackArtist">Choose an output to start</div>
         <div class="track-album" id="trackAlbum"></div>
@@ -50,7 +50,7 @@
         <div class="volume-wrap"><label for="volume">VOL</label><input id="volume" class="range" type="range" min="0" max="100" value="0" disabled><span id="volumeValue">--</span></div>
       </section>
       <section class="panel phone-audio-panel" aria-label="Phone playback">
-        <button id="phoneAudioButton" class="primary-button" type="button">LISTEN ON THIS PHONE</button>
+        <button id="phoneAudioButton" class="primary-button" type="button">LISTEN ON THIS DEVICE</button>
         <p id="phoneAudioStatus" class="help" role="status">Play through this phone’s speaker or headphones.</p>
       </section>
       <button id="openQueue" class="next-up panel" aria-label="Open queue">
@@ -64,6 +64,7 @@
         <form id="searchForm" class="search-form">
           <input id="searchInput" type="search" placeholder="Search artists, albums, tracks…" autocomplete="off" aria-label="Search music">
           <button type="submit">FIND</button>
+          <button id="radioOpen" type="button" aria-haspopup="dialog">RADIO</button>
         </form>
         <div class="filters" aria-label="Search types">
           <button data-filter="track" aria-pressed="true">TRACKS</button><button data-filter="album" aria-pressed="true">ALBUMS</button><button data-filter="playlist" aria-pressed="true">PLAYLISTS</button><button data-filter="artist" aria-pressed="true">ARTISTS</button><button data-filter="genre" aria-pressed="true">GENRES</button>
@@ -102,7 +103,7 @@
       <p id="connectError" class="connect-error" role="alert" hidden></p>
       <hr>
       <div class="dialog-heading"><h2>Phone audio</h2><button id="stopPhoneAudio" class="secondary" type="button">TURN OFF</button></div>
-      <p class="help">After connecting, tap Listen on this phone. Keep Decksona open while listening. If iOS interrupts audio, return here and tap Resume phone audio.</p>
+      <p class="help">After connecting, tap Listen on this device. Keep Decksona open while listening. If iOS interrupts audio, return here and tap Resume device audio.</p>
       <details><summary>Advanced phone audio</summary>
         <label for="phoneSendspinUrl">SENDSPIN ADDRESS (OPTIONAL)</label><input id="phoneSendspinUrl" type="text" placeholder="ws://192.168.1.100:8927/sendspin" autocomplete="off">
         <p class="help">Leave blank on home Wi-Fi. An HTTPS page needs a reachable wss:// audio endpoint; the Music Assistant API address alone is not enough.</p>
@@ -114,6 +115,17 @@
     </form>
   </dialog>
 
+  <dialog id="radioDialog" class="radio-dialog" aria-labelledby="radioTitle">
+    <form id="radioForm">
+      <div class="dialog-heading"><h2 id="radioTitle">Radio</h2><button id="radioClose" class="icon-button" type="button" aria-label="Close radio">×</button></div>
+      <p id="radioStatus" class="help" role="status"></p>
+      <ul id="radioStations" class="radio-stations" aria-label="Saved radio stations"></ul>
+      <label for="radioName">STATION NAME</label><input id="radioName" type="text" placeholder="Record player" required>
+      <label for="radioUrl">DIRECT STREAM URL</label><input id="radioUrl" type="url" placeholder="http://192.168.1.50:8000/vinyl" required>
+      <p id="radioError" class="connect-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="radioSave" class="primary-button" type="submit">ADD STATION</button></div>
+    </form>
+  </dialog>
   <dialog id="themesDialog" class="themes-dialog" aria-labelledby="skinGalleryTitle">
     <div class="dialog-heading"><div><span class="eyebrow">57 SKINS · 21 LISTENING ROOMS</span><h2 id="skinGalleryTitle">Find your atmosphere</h2></div><button id="skinsClose" class="icon-button" type="button" aria-label="Close skins">×</button></div>
     <p id="activeSkinName" aria-live="polite"></p>
@@ -125,6 +137,7 @@
   <script src="player-session.js?v=phone-fix-5"></script>
   <script src="local-player.js?v=phone-fix-5"></script>
   <script src="audio.bundle.js?v=phone-fix-5"></script>
-  <script src="app.js?v=genre-browse-1"></script>
+  <script src="radio.js?v=radio-3"></script>
+  <script src="app.js?v=radio-5"></script>
 </body>
 </html>

@@ -39,3 +39,8 @@ html[data-pattern="circuit"] .deck::after,html[data-pattern="circuit"] .panel::a
 .offline-filter{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:9px!important;letter-spacing:.06em!important}.offline-filter input{margin:0;accent-color:#8fe0b5}
 .offline-filter input{width:auto!important;flex:none}
 .row.browseable{cursor:pointer}
+.radio-dialog{max-height:90vh;overflow:auto}
+.radio-stations{display:grid;gap:5px;max-height:33vh;overflow:auto;list-style:none;padding:0;margin:0}
+.radio-stations li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 9px;background:var(--skin-screen);border:1px solid var(--skin-border);overflow-wrap:anywhere}
+.radio-stations button{padding:5px 9px;color:var(--skin-accent);background:var(--skin-panel);border:1px solid var(--skin-border);font-size:10px}
+#radioError{color:#ffc1b2}

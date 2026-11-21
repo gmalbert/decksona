@@ -30,6 +30,12 @@ Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an a
 
 The app stores the token encrypted through Electron's operating-system secure storage when available. Otherwise it keeps the token only until the app closes.
 
+## Radio stations
+
+In **Library → Radio**, enter a station name and its direct HTTP or HTTPS audio stream URL, then choose **Add station**. For a record player streamed through Icecast, use its mount URL, such as `http://192.168.1.50:8000/vinyl`. Music Assistant must be able to reach the URL. It saves the station in its radio library, where both Decksona editions can find it. Select your output and choose **Play** next to the station to start the live stream.
+
+While a station plays, Decksona shows the current track, artist, album, and cover art supplied by Music Assistant.
+
 ## Local computer audio
 
 Decksona includes its own Sendspin audio player on Windows and macOS. In Connection settings, leave **Play audio on this computer** enabled, then select **This computer · Decksona** in the player selector. Audio plays through the operating system’s default speakers or headphones. No browser or separate companion app is needed; all Decksona skins, queue controls, and library features remain available. Your Music Assistant server must stay running.
@@ -40,11 +46,11 @@ On servers that require approval, complete **Setup required** for the new Deckso
 
 Closing the desktop window keeps Decksona and its audio running in the system tray (menu bar on macOS). Click the Decksona tray icon to reopen it, or choose **Quit Decksona** to stop playback and exit. If your system cannot create a tray icon, closing the window exits normally on Windows. Switching the player selector to another output changes which queue you control; use **Move music…** to transfer an existing session to this computer.
 
-`npm start` and desktop packaging commands build the bundled audio libraries automatically. The phone/web edition also includes an independent player: tap **Listen on this phone**, then play music through **This phone · Decksona**. See the [phone setup and browser limitations](web/README.md).
+`npm start` and desktop packaging commands build the bundled audio libraries automatically. The phone/web edition also includes an independent player. Tap **Listen on this device**, then play music through **This phone · Decksona**. See the [phone setup and browser limitations](web/README.md).
 
-### Listen on this phone
+### Listen on this device
 
-**Listen on this phone** turns the phone running Decksona into a Music Assistant audio output, using its speaker, headphones, or connected Bluetooth audio device. Tap it once after opening the web app to enable phone audio and register/select **This phone · Decksona**. Then choose music in Library and play it, or use **Move music…** to transfer the current session to the phone. The button only prepares the phone as a player; it does not start a song. Browsers require a user tap to activate audio, especially on iPhone, so the same control can resume audio after reopening or interruption. See [phone setup and browser limitations](web/README.md).
+**Listen on this device** turns the device running the web app into a Music Assistant audio output, using its speaker, headphones, or connected Bluetooth audio device. Tap it once after opening the web app to enable phone audio and register/select **This phone · Decksona**. Then choose music in Library and play it, or use **Move music…** to transfer the current session to the phone. Browsers require a user tap to activate audio, especially on iPhone, so the same control can resume audio after reopening or interruption. See [phone setup and browser limitations](web/README.md).
 
 For the optional desktop audio integration check, install its isolated Python fixtures with `python -m pip install --target output/audio-test-python aiosendspin==10.3.0 av==19.0.2`, then run `npm run check:audio`. It starts loopback-only servers, uses a separate Electron profile, and verifies encrypted lossless audio decoding/scheduling, local output selection, background playback, identity persistence, and cleanup. Test audio is not connected to physical speakers. Results are written to `output/audio-report.json`.
 

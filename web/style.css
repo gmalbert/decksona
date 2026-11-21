@@ -50,3 +50,7 @@ html, body, main { width: 100%; min-width: 0; max-width: 100%; }
   .row-buttons button.browse-button, .row-buttons button:not(.browse-button) { width: 44px; height: 44px; padding: 0; }
 }
 .filters{grid-template-columns:repeat(5,minmax(0,1fr))}.offline-filter{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:9px!important;letter-spacing:.06em!important}.offline-filter input{accent-color:var(--accent)}
+.radio-dialog{overflow:auto}
+.radio-stations{display:grid;gap:6px;max-height:32dvh;overflow:auto;list-style:none;padding:0;margin:0}
+.radio-stations li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 10px;background:var(--screen);border:1px solid var(--border);overflow-wrap:anywhere}
+.radio-stations button{min-height:44px;padding:0 12px;color:var(--accent);background:var(--panel);border:1px solid var(--border);font-size:11px}

@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ws: wss:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: http: https:; connect-src ws: wss:">
+  <meta name="referrer" content="no-referrer">
   <title>Decksona</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="themes.css">
@@ -34,7 +35,7 @@
     <section class="workspace">
       <div id="libraryPanel" class="panel library-panel">
         <div class="panel-heading"><span>LIBRARY SEARCH</span><div class="search-filters" role="group" aria-label="Search media types"><button type="button" data-search-type="track" aria-pressed="true">TRACKS</button><button type="button" data-search-type="album" aria-pressed="true">ALBUMS</button><button type="button" data-search-type="playlist" aria-pressed="true">PLAYLISTS</button><button type="button" data-search-type="artist" aria-pressed="true">ARTISTS</button><button type="button" data-search-type="genre" aria-pressed="true">GENRES</button></div></div>
-        <form id="searchForm" class="search"><input id="searchInput" type="search" placeholder="Search your Music Assistant library…" autocomplete="off" aria-label="Search music"><button type="submit">FIND</button></form>
+        <form id="searchForm" class="search"><input id="searchInput" type="search" placeholder="Search your Music Assistant library…" autocomplete="off" aria-label="Search music"><button type="submit">FIND</button><button id="radioOpen" type="button" aria-haspopup="dialog">RADIO</button></form>
         <div id="browseNavigation" class="browse-navigation" hidden><button id="browseBack" type="button">← BACK</button><span id="browseTitle"></span><div id="genreBrowseModes" class="genre-browse-modes" role="group" aria-label="Genre browse view" hidden><button id="genreArtists" type="button" aria-pressed="true">ARTISTS</button><button id="genreAlbums" type="button" aria-pressed="false">ALBUMS</button></div></div>
         <div class="list-head"><span>TITLE / ARTIST</span><span>TYPE</span></div>
         <div id="results" class="list results"><div class="empty">Search for music to begin.</div></div>
@@ -67,6 +68,17 @@
       <div class="dialog-actions"><button type="submit">CONNECT</button></div>
     </form>
   </dialog>
+  <dialog id="radioDialog" class="radio-dialog" aria-labelledby="radioTitle">
+    <form id="radioForm">
+      <div class="dialog-title"><span id="radioTitle">RADIO</span><button id="radioClose" type="button" aria-label="Close radio">✕</button></div>
+      <p id="radioStatus" role="status"></p>
+      <ul id="radioStations" class="radio-stations" aria-label="Saved radio stations"></ul>
+      <label for="radioName">STATION NAME</label><input id="radioName" type="text" placeholder="Record player" required>
+      <label for="radioUrl">DIRECT STREAM URL</label><input id="radioUrl" type="url" placeholder="http://192.168.1.50:8000/vinyl" required>
+      <p id="radioError" class="connect-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="radioSave" type="submit">ADD STATION</button></div>
+    </form>
+  </dialog>
   <dialog id="themesDialog" class="themes-dialog">
     <div class="dialog-title"><span>PLAYER SKINS <small id="themeCount"></small></span><button id="closeThemes" type="button" aria-label="Close skins">✕</button></div>
     <p>Explore 21 crafted listening rooms and 36 classic skins. Your selection is saved for this computer.</p>
@@ -77,6 +89,7 @@
   <script src="player-session.js"></script>
   <script src="local-player.js"></script>
   <script src="desktop-audio.bundle.js"></script>
+  <script src="web/radio.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

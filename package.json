@@ -20,7 +20,7 @@
     "sync:skins": "node scripts/build-skins.js",
     "check:skins": "electron scripts/verify-skins.cjs",
     "preview:skins": "electron scripts/verify-skins.cjs --generate-previews",
-    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check themes.js && node --test tests/*.test.js",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check web/radio.js && node --check themes.js && node --test tests/*.test.js",
     "dist:win": "electron-builder --win portable",
     "dist:win:installer": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac dmg"
@@ -44,6 +44,7 @@
       "player-session.js",
       "local-audio-config.js",
       "local-player.js",
+      "web/radio.js",
       "desktop-audio.bundle.js",
       "themes.css",
       "skins/**",

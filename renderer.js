@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const state = { connected: false, playerId: '', players: [], queues: [], items: [], results: [], queue: null, player: null, searching: false, refreshing: false };
+const state = { connected: false, serverUrl: '', playerId: '', players: [], queues: [], items: [], results: [], queue: null, player: null, searching: false, refreshing: false };
 const layout = { compact: false, mini: false, library: true, queue: true };
 let beforeMiniCompact = false;
 let draggedQueueItem = null;
@@ -100,14 +100,16 @@ function time(seconds) {
   return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 }
 function artist(item) {
-  return creditedArtists(item).map(entry => entry.name).join(', ') || 'Unknown artist';
+  return creditedArtists(item).map(entry => entry.name).join(', ') || (isRadio(item) ? 'Live radio' : 'Unknown artist');
 }
+function isRadio(item) { return (item?.media_item || item)?.media_type === 'radio'; }
 function creditedArtists(item) {
   const media = item?.media_item || item;
   const known = value => value && !/^\[?unknown(?: artist)?\]?$/i.test(value.trim());
   const entries = (media?.artists || []).map(entry => typeof entry === 'string' ? { name: entry } : entry).filter(entry => known(entry?.name));
   if (entries.length) return entries;
   if (known(media?.artist?.name)) return [media.artist];
+  if (isRadio(item)) return [];
   // Some sources put "Artist - Track" in the title while leaving artist tags unknown.
   const name = String(media?.name || item?.name || '').replace(/^\[unknown\]\s*-\s*/i, '');
   const separator = name.indexOf(' - ');
@@ -130,19 +132,19 @@ function artworkInfo(item) {
   return item?.image || image || (releaseGroup ? { releaseGroup } : release ? { release }
     : album(item) && artist(item) !== 'Unknown artist' ? { album: album(item), artist: artist(item) } : null);
 }
-async function loadArtwork(img, item) {
+async function loadArtwork(img, item, liveImage = '') {
   const image = artworkInfo(item);
-  const media = item?.media_item || item;
   const artists = creditedArtists(item);
-  if (!image && !artists.length) { img.dataset.artworkKey = ''; img.hidden = true; img.removeAttribute('src'); $('artworkCredit').hidden = true; return; }
-  const key = JSON.stringify({ image, artists });
+  if (!liveImage && !image && !artists.length) { img.dataset.artworkKey = ''; img.hidden = true; img.removeAttribute('src'); $('artworkCredit').hidden = true; return; }
+  const key = JSON.stringify({ liveImage, image, artists });
   if (img.dataset.artworkKey !== key) { img.hidden = true; $('artworkCredit').hidden = true; }
   img.dataset.artworkKey = key;
   try {
     let pending = artworkCache.get(key);
     if (!pending) {
       pending = (async () => {
-        const src = image ? await window.retro.image(image) : null;
+        const src = (liveImage ? await window.loadRadioArtwork(liveImage) : '') ||
+          (image ? await window.retro.image(image) : null);
         if (src) return { src, alt: 'Album cover', title: 'Album cover · Toggle ultra-small player' };
         const portrait = artists.length ? await window.retro.artistImage(artists) : null;
         return portrait ? { src: portrait.src, source: portrait.source, alt: `${portrait.artist || 'Artist'} picture`, title: `Artist picture: ${portrait.artist || 'Unknown artist'} · Toggle ultra-small player` } : null;
@@ -160,6 +162,7 @@ async function loadArtwork(img, item) {
 }
 function title(item) { return item?.name || item?.media_item?.name || 'Unknown title'; }
 function duration(item) {
+  if (isRadio(item)) return 0;
   return [item?.duration, item?.media_item?.duration, item?.streamdetails?.duration]
     .map(Number).find(value => Number.isFinite(value) && value > 0) || 0;
 }
@@ -174,7 +177,7 @@ function renderProgress() {
   const total = duration(state.queue?.current_item);
   const elapsed = Math.min(total || Infinity, currentElapsed());
   $('timeDisplay').textContent = time(elapsed);
-  $('durationDisplay').textContent = total ? time(total) : '--:--';
+  $('durationDisplay').textContent = isRadio(state.queue?.current_item) ? 'LIVE' : total ? time(total) : '--:--';
   if (!seeking) $('seek').value = total ? Math.round(elapsed / total * 100) : 0;
   $('seekPercent').textContent = `${$('seek').value}%`;
   $('seek').disabled = !total || !state.queue?.active;
@@ -182,10 +185,12 @@ function renderProgress() {
 function renderPlayer() {
   const queue = state.queue;
   const current = queue?.current_item;
-  loadArtwork($('nowPlayingArt'), current);
-  $('trackTitle').textContent = current ? title(current).toUpperCase() : (state.connected ? 'NOTHING PLAYING' : 'NOT CONNECTED');
-  $('trackArtist').textContent = current ? artist(current) : (state.connected ? 'Search your library and press play' : 'Connect to your Music Assistant server');
-  $('trackMeta').textContent = current?.media_item?.album?.name || 'MA DIGITAL AUDIO';
+  const live = window.radioNowPlaying?.(current, state.player?.current_media);
+  const liveImage = window.radioArtworkUrl?.(live?.imageUrl, state.serverUrl);
+  loadArtwork($('nowPlayingArt'), current, liveImage);
+  $('trackTitle').textContent = current ? (live?.title || title(current)).toUpperCase() : (state.connected ? 'NOTHING PLAYING' : 'NOT CONNECTED');
+  $('trackArtist').textContent = current ? live?.artist || artist(current) : (state.connected ? 'Search your library and press play' : 'Connect to your Music Assistant server');
+  $('trackMeta').textContent = live?.album || album(current) || 'MA DIGITAL AUDIO';
   $('connectionStatus').textContent = state.connected ? '● CONNECTED' : '● OFFLINE';
   $('connectionStatus').classList.toggle('online', state.connected);
   const playing = queue?.state === 'playing';
@@ -481,6 +486,7 @@ async function connect() {
   try {
     const saved = await window.retro.saveSettings({ serverUrl: $('serverUrl').value, token: $('token').value, playerId: state.playerId, localAudio: $('localAudio').checked, sendspinUrl: $('sendspinUrl').value });
     state.connected = true;
+    state.serverUrl = saved.serverUrl;
     state.playerId = saved.playerId;
     await startDesktopAudio();
     $('token').value = '';
@@ -494,6 +500,7 @@ async function init() {
   const saved = await window.retro.getSettings();
   applyTheme(saved.themeId);
   state.connected = Boolean(saved.serverUrl && saved.hasToken);
+  state.serverUrl = saved.serverUrl;
   state.playerId = saved.playerId;
   $('serverUrl').value = saved.serverUrl;
   $('localAudio').checked = saved.localAudio !== false;
@@ -535,6 +542,10 @@ for (const [button, key] of [['libraryToggle', 'library'], ['queueToggle', 'queu
 $('closeSettings').addEventListener('click', () => $('settingsDialog').close());
 $('settingsForm').addEventListener('submit', event => { event.preventDefault(); connect(); });
 $('searchForm').addEventListener('submit', event => { event.preventDefault(); search(); });
+if ($('radioOpen')) window.installRadioLibrary({
+  command: (name, args) => window.retro.command(name, args),
+  play: station => playMedia(station, 'replace')
+});
 $('browseBack').addEventListener('click', () => {
   ++searchRevision;
   const previous = browseHistory.pop();
@@ -584,8 +595,9 @@ $('seek').addEventListener('change', () => { seeking = false; const total = dura
 $('volume').addEventListener('input', () => { $('volumeValue').textContent = $('volume').value; });
 $('volume').addEventListener('change', () => act('volume', { player_id: state.playerId, volume_level: Number($('volume').value) }));
 document.addEventListener('keydown', event => {
-  if (event.target.matches('input,select,button') || $('settingsDialog').open) return;
+  if (event.target.matches('input,select,button') || $('settingsDialog').open || $('radioDialog')?.open) return;
   if (event.code === 'Space') { event.preventDefault(); act('playPause', { queue_id: state.playerId }); }
+  if (event.shiftKey && isRadio(state.queue?.current_item)) return;
   if (event.code === 'ArrowRight') act(event.shiftKey ? 'skip' : 'next', { queue_id: state.playerId, ...(event.shiftKey ? { seconds: 10 } : {}) });
   if (event.code === 'ArrowLeft') act(event.shiftKey ? 'skip' : 'previous', { queue_id: state.playerId, ...(event.shiftKey ? { seconds: -10 } : {}) });
 });
