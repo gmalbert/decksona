@@ -21,9 +21,9 @@
     "check:skins": "electron scripts/verify-skins.cjs",
     "preview:skins": "electron scripts/verify-skins.cjs --generate-previews",
     "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check web/radio.js && node --check themes.js && node --test tests/*.test.js",
-    "dist:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win portable --publish never",
     "dist:win:installer": "electron-builder --win nsis",
-    "dist:mac": "electron-builder --mac dmg"
+    "dist:mac": "electron-builder --mac dmg --publish never"
   },
   "devDependencies": {
     "electron": "45.3.4",

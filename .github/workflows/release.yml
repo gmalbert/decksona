@@ -35,11 +35,11 @@ jobs:
 
       - name: Build Windows executable
         if: matrix.target == 'win'
-        run: npm run dist:win -- --publish never
+        run: npm run dist:win
 
       - name: Build macOS disk image
         if: matrix.target == 'mac'
-        run: npm run dist:mac -- --publish never
+        run: npm run dist:mac
 
       - name: Upload release files for publishing
         uses: actions/upload-artifact@v4
