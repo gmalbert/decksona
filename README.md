@@ -15,6 +15,8 @@ npm start
 
 For a standalone Windows executable that does not need installation, run `npm run dist:win` on Windows. Copy the generated `Decksona.exe` from `dist/` anywhere and launch it; each build overwrites that filename. To build the optional Windows installer, run `npm run dist:win:installer`. For a macOS DMG, run `npm run dist:mac` on a Mac. Builds are written to `dist/`. macOS distribution to other users requires Apple code signing and notarization; local development does not.
 
+To publish prebuilt downloads, push a version tag such as `v0.1.0`. GitHub Actions builds the Windows executable and macOS DMG, then attaches them to a GitHub Release for that tag. Generated executables are kept out of normal Git commits.
+
 ## iPhone and Android web app
 
 The repository's [`web/`](web/README.md) folder contains a phone-sized version that can be added to an iPhone or Android home screen. It uses the same player, search, queue, and skin features, with no native app install or HTTPS certificate. Copy its files to Home Assistant's `www/decksona` folder, then open `http://HOME_ASSISTANT_IP:8123/local/decksona/index.html` on your phone. Home Assistant serves the files, so no extra computer has to stay open.
