@@ -73,8 +73,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          mapfile -d '' assets < <(find release-assets -type f -print0)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release files were downloaded" >&2
+            exit 1
+          fi
+
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" release-assets/* --clobber
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" release-assets/* --title "$GITHUB_REF_NAME" --generate-notes
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes
           fi
