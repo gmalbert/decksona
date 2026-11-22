@@ -6,8 +6,10 @@ window.createPlayerSession = function ({state, command, select, refresh, notify,
     return (player && formatPlayerName(player)) || id || 'No player selected';
   };
   const tools = doc.createElement('div'); tools.className = 'session-tools';
-  const move = doc.createElement('button'); move.type = 'button'; move.textContent = 'Move music…';
-  move.title = 'Move this listening session to another player'; tools.append(move);
+  const move = doc.createElement('button'); move.type = 'button';
+  move.innerHTML = '<span class="transfer-label">Move music…</span><span class="transfer-short-label" aria-hidden="true" hidden>Move</span>';
+  move.setAttribute('aria-label', 'Move music…');
+  move.title = 'Move music to another player'; tools.append(move);
   const output = doc.querySelector('.output-row,.output-panel');
   if (doc.querySelector('.shell')) output.append(tools);
   else output.after(tools);

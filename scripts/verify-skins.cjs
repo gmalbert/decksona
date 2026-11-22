@@ -108,6 +108,20 @@ async function main(){
       queue_id: 'living-room', media: 'library://radio/1', option: 'replace'
     });
     assert.deepEqual(await js(`(()=>{const original=state.queue;state.queue={active:true,current_item:{media_item:{media_type:'radio',duration:86400}}};renderProgress();const live=$('${durationId}').textContent;const disabled=$('seek').disabled;state.queue=original;renderProgress();return {live,disabled};})()`), { live: 'LIVE', disabled: true });
+    if (edition === 'desktop') {
+      assert.deepEqual(await js(`(()=>{
+        const original=state.queue;
+        state.queue={active:true,current_item:{media_item:{media_type:'radio'}}};
+        renderProgress();
+        const visible=selector=>document.querySelector(selector).getClientRects().length>0;
+        const full=[visible('#durationDisplay'),visible('.duration-block small'),visible('.seek-row')];
+        layout.mini=true; renderLayout();
+        const mini=[visible('.mini-live'),visible('#seek'),visible('#seekPercent')];
+        layout.mini=false; renderLayout();
+        state.queue=original; renderProgress();
+        return {full,mini};
+      })()`), {full:[true,false,false],mini:[true,false,false]});
+    }
 
     const albumId = edition === 'web' ? 'trackAlbum' : 'trackMeta';
     const updates = await js(`(()=>{
@@ -302,27 +316,45 @@ async function main(){
   await js(`applyTheme('ocean-grid')`);
   assert.equal(await js(`document.documentElement.dataset.skin`),'');
   assert.equal(await js(`getComputedStyle(document.querySelector('.art-empty')).display`),'none');
+  // Loading the desktop HTML in a browser should explain how to open the player.
+  await win.loadFile(path.join(root,'index.html'));
+  assert.deepEqual(await js(`({
+    launch: $('desktopLaunch').getClientRects().length > 0,
+    radio: $('radioOpen').getClientRects().length > 0
+  })`), {launch:true,radio:false});
   // Exercise the actual desktop renderer too, with a minimal IPC boundary fixture.
   await win.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`window.retro={getSettings:async()=>({themeId:'vinyl-lounge',serverUrl:'',hasToken:false,playerId:''}),selectTheme:async id=>id,setCompact:async()=>{},command:async()=>[],image:async()=>null,artistImage:async()=>null};`});
   await win.loadFile(path.join(root,'index.html'));
   await delay(100);
-  await js(`$('settingsDialog').close();$('trackTitle').textContent='Night Bloom';$('trackArtist').textContent='Luna Vale';$('nowPlayingArt').src=${JSON.stringify('data:image/svg+xml;base64,'+Buffer.from(cover).toString('base64'))};$('nowPlayingArt').hidden=false;`);
+  await js(`$('settingsDialog').close()`);
   await js(`state.serverUrl='http://127.0.0.1:${port}';state.playerId='living-room';window.retro.command=async(command,args)=>{
     window.fixtureCommands.push({command,args});
     return window.fixtureRadioCommand({radioStations:'music/radios/library_items',addRadio:'builtin/add_radio'}[command],args)??[];
   };void 0;`);
   await verifyRadio({ add: 'addRadio', play: 'playMedia' }, 'durationDisplay', 'desktop');
+  await js(`$('trackTitle').textContent='Night Bloom';$('trackArtist').textContent='Luna Vale';$('nowPlayingArt').src=${JSON.stringify('data:image/svg+xml;base64,'+Buffer.from(cover).toString('base64'))};$('nowPlayingArt').hidden=false;`);
   await js(`state.queue={active:true,state:'paused',elapsed_time:134,current_item:{duration:276}};renderProgress();$('trackMeta').textContent='After the Last Light';$('playerSelect').replaceChildren(new Option('Living Room','demo'));$('volume').disabled=false;$('volume').value=42;$('volumeValue').textContent='42';$('connectionStatus').textContent='● PREVIEW';`);
   assert.equal(await js(`document.querySelectorAll('.theme-card').length`),57);
   if(!generatePreviews) await js(`Promise.all([...document.querySelectorAll('.theme-player-preview')].map(img=>{img.loading='eager';return img.decode()}))`);
   for(const mode of ['full','compact','mini']) {
-    win.setContentSize(mode==='mini'?316:mode==='compact'?660:930,mode==='mini'?620:mode==='compact'?360:740);
+    win.setContentSize(mode==='mini'?316:mode==='compact'?660:930,mode==='mini'?510:mode==='compact'?360:740);
     for(const theme of THEMES) {
       const result=await js(`(()=>{
         applyTheme(${JSON.stringify(theme.id)});layout.compact=${mode!=='full'};layout.mini=${mode==='mini'};renderLayout();
         return [...document.querySelectorAll('.transport button,.output-row select')].filter(n=>{const r=n.getBoundingClientRect();return !r.width||r.left<0||r.right>innerWidth;}).map(n=>n.id);
       })()`);
       assert.deepEqual(result,[],`desktop ${mode} ${theme.id}`);
+      if(mode==='mini') {
+        assert.equal(await js(`(()=>{
+          const player=$('playerSelect').getBoundingClientRect();
+          const button=document.querySelector('.session-tools button');
+          const move=button.getBoundingClientRect();
+          const offline=document.querySelector('.offline-filter').getBoundingClientRect();
+          return button.innerText.trim()==='Move' && move.width<player.width &&
+            move.height===34 && move.height===player.height && move.top===player.top && move.right<=innerWidth &&
+            offline.top>=player.bottom && offline.left===player.left;
+        })()`),true,`desktop mini player controls and offline filter align for ${theme.id}`);
+      }
       if(mode!=='full'){const overflow=await js(`(()=>{const shell=document.querySelector('.shell'),deck=document.querySelector('.deck');return {shell:shell.scrollHeight>shell.clientHeight+1,deck:deck.scrollHeight>deck.clientHeight+1}})()`);assert.deepEqual(overflow,{shell:false,deck:false},`default ${mode} scroll ${theme.id}`);}
       assert.equal(await js(`document.querySelector('.shell').classList.contains('compact')`),mode!=='full');
       if(generatePreviews&&mode==='full') await savePreview('desktop',theme);

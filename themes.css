@@ -2,9 +2,6 @@
 .session-tools { display:flex; justify-content:flex-end; margin-top:8px; }
 .shell .output-row .session-tools { margin:0 0 0 auto; flex:none; }
 .shell .output-row select { min-width:120px; }
-.shell.mini .output-row { flex-wrap:wrap; }
-.shell.mini .output-row .session-tools { width:100%; margin-top:3px; }
-.shell.mini .session-tools button { padding:6px 10px; }
 .shell input[type="range"]::-webkit-slider-runnable-track { height:4px; }
 .shell input[type="range"]::-webkit-slider-thumb { margin-top:-4.5px; }
 .session-tools button,.transfer-actions button { padding:8px 12px; border:1px solid var(--skin-border); border-radius:12px; background:var(--skin-screen); color:var(--skin-accent); cursor:pointer; }
