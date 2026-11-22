@@ -21,7 +21,7 @@ jobs:
             artifact_path: dist/*.exe
           - os: macos-latest
             target: mac
-            artifact_path: dist/*.dmg
+            artifact_path: dist/mac/*.dmg
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -82,5 +82,10 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" \
+              --generate-notes --notes-file - <<'NOTES'
+          ## First launch on macOS
+
+          Open the DMG, drag **Decksona** to **Applications**, then try opening Decksona once. If macOS blocks it, dismiss the alert and go to **System Settings → Privacy & Security → Security**. Click **Open Anyway** for Decksona and confirm if offered. [Apple’s instructions](https://support.apple.com/en-us/102445)
+          NOTES
           fi

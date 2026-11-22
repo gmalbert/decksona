@@ -77,7 +77,7 @@ async function main(){
   win.webContents.debugger.on('message',(_event,method,params)=>{
     if(method==='Fetch.requestPaused') win.webContents.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'image/svg+xml'}],body:Buffer.from(cover).toString('base64')}).catch(e=>errors.push(e.message));
   });
-  const js=source=>win.webContents.executeJavaScript(source,true);
+  const js=source=>win.webContents.executeJavaScript(/\bawait\s/.test(source)?`(async()=>{${source}})()`:source,true);
   async function verifyRadio(commands, durationId, edition) {
     const station = { name: 'Record player', url: 'http://192.168.1.50:8000/vinyl' };
     const pending = async condition => {
@@ -149,7 +149,7 @@ async function main(){
     const coverId = edition === 'web' ? 'cover' : 'nowPlayingArt';
     await delay(60);
     await pending('!state.refreshing');
-    const artUpdates = await js(`(async ()=>{
+    const artUpdates = await js(`return await (async ()=>{
       const savedQueue=state.queue, savedPlayer=state.player;
       const base='http://127.0.0.1:${port}';
       const img=$('${coverId}');
@@ -255,7 +255,7 @@ async function main(){
   const sent=await js(`window.fixtureCommands.map(m=>m.command)`);
   for(const command of ['player_queues/play_pause','player_queues/shuffle','player_queues/repeat','player_queues/seek','players/cmd/volume_set'])assert.ok(sent.includes(command),command);
   await js(`document.querySelector('[data-page="libraryPage"]').click();$('searchInput').value='Night';$('searchForm').requestSubmit();`);await delay(100);
-  assert.equal(await js(`$('results').querySelector('.row-name').textContent`),'Night Bloom');
+  assert.equal(await js(`$('results').querySelector('.music-card-copy strong').textContent`),'Night Bloom');
   // The library has different intrinsic-width constraints than the player.
   // Exercise it explicitly with long metadata and both one- and two-button rows.
   await js(`
@@ -264,8 +264,9 @@ async function main(){
       {name:'Coming Home — Deluxe Edition with bonus recordings',artists:[{name:'Leon Bridges'}],media_type:'album',uri:'demo://album/one'},
       {name:'Leon Bridges and the extended artist name for a narrow screen',media_type:'artist',uri:'demo://artist/one'}
     ];
-    state.browseLabel='Coming Home · SONGS';state.history=[{items:[],label:''}];browseNav();
-    renderList('results',state.results,'results','');
+    window.responsiveLibraryItems=state.results;
+    window.responsiveSearch=request;request=async(command,args)=>command==='music/search'?{tracks:window.responsiveLibraryItems}:window.responsiveSearch(command,args);
+    $('searchInput').value='Coming Home';await search();
   `);
   let libraryChecks=0;
   for(const width of [320,360,375,390,414,430,480,820,1100]) {
@@ -273,7 +274,7 @@ async function main(){
     for(const theme of [...SIGNATURE_THEMES,THEMES.find(theme=>theme.id==='ocean-grid')]) {
       const result=await js(`(()=>{
         applyTheme(${JSON.stringify(theme.id)});showPage('libraryPage');
-        const controls=[...document.querySelectorAll('.topbar button,.search-form input,.search-form button,.filters button,.browse-bar button,#results .row-buttons button')];
+        const controls=[...document.querySelectorAll('.topbar button,.search-form input,.search-form button,.filters button,.listening-options input,.listening-options select:not([hidden]),.listening-context button,#results .music-card-actions button')];
         const clipped=controls.filter(node=>{if(node.closest('[hidden]'))return false;const r=node.getBoundingClientRect(),panel=node.closest('.panel')?.getBoundingClientRect();return !r.width||r.left < -1||r.right>innerWidth+1||(panel&&r.right>panel.right);}).map(node=>node.id||node.getAttribute('aria-label')||node.textContent);
         return {overflow:document.documentElement.scrollWidth>innerWidth,clipped,inputSize:parseFloat(getComputedStyle($('searchInput')).fontSize)};
       })()`);
@@ -289,7 +290,7 @@ async function main(){
     }
   }
   const beforeAdd=await js(`window.fixtureCommands.filter(message=>message.command==='player_queues/play_media').length`);
-  await js(`document.querySelector('#results .row-buttons button').click()`);await delay(100);
+  await js(`document.querySelector('#results .music-card-actions button[title^="Add to end"]').click()`);await delay(100);
   assert.equal(await js(`window.fixtureCommands.filter(message=>message.command==='player_queues/play_media').length`),beforeAdd+1,'visible Add button still queues music');
   win.setContentSize(320, 740);
   await verifyRadio({ add: 'builtin/add_radio', play: 'player_queues/play_media' }, 'duration', 'web');

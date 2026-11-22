@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const WEB_BUILD = 'radio-5';
+const WEB_BUILD = '0.2.0';
 let availableBuild = '';
 async function checkForUpdate() {
   try {
@@ -12,6 +12,7 @@ async function checkForUpdate() {
   } catch { /* A temporary network outage must not interrupt playback. */ }
 }
 const commands = {
+  ...window.DECKSONA_LISTENING.commands,
   players: 'players/all', queues: 'player_queues/all', items: 'player_queues/items', search: 'music/search',
   radioStations: 'music/radios/library_items', addRadio: 'builtin/add_radio',
   playPause: 'player_queues/play_pause', stop: 'player_queues/stop', next: 'player_queues/next', previous: 'player_queues/previous',
@@ -20,7 +21,6 @@ const commands = {
   genreArtists: 'music/artists/library_items', genreAlbums: 'music/genres/albums', albumTracks: 'music/albums/album_tracks', shuffle: 'player_queues/shuffle', repeat: 'player_queues/repeat', volume: 'players/cmd/volume_set'
 };
 const state = { base: '', token: '', socket: null, opening: null, serial: 0, pending: new Map(), playerId: '', players: [], queues: [], queue: null, player: null, items: [], results: [], filters: new Set(['track','album','playlist','artist','genre']), history: [], browseLabel: '', refreshing: false, seeking: false, theme: 'phosphor-glass', messageTimer: 0 };
-let browseRevision = 0, genreBrowseItem = null, genreBrowseMode = 'artists', genreBrowseAtRoot = false;
 let hideOfflinePlayers = localStorage.getItem('decksona.hideOfflinePlayers') === 'true';
 function phoneClientId() { return phoneAudio?.clientId || localStorage.getItem('decksona.phonePlayerId') || ''; }
 function phonePlayerId() { return window.DECKSONA_LOCAL_PLAYER.localPlayerId(state.players, phoneClientId()); }
@@ -123,7 +123,7 @@ function request(command, args = {}) {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN) return Promise.reject(new Error('Not connected to Music Assistant.'));
   const message_id = String(++state.serial);
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { state.pending.delete(message_id); reject(new Error('Music Assistant did not respond in time.')); }, [commands.artistAlbums, commands.genreArtists, commands.genreAlbums, commands.albumTracks, commands.addRadio].includes(command) ? 30000 : 15000);
+    const timer = setTimeout(() => { state.pending.delete(message_id); reject(new Error('Music Assistant did not respond in time.')); }, ['music/artists/artist_albums','music/artists/library_items','music/genres/albums','music/albums/album_tracks','music/playlists/playlist_tracks','music/recommendations','music/recommendations/items',commands.addRadio].includes(command) ? 30000 : 15000);
     state.pending.set(message_id, { resolve, reject, timer });
     try { state.socket.send(JSON.stringify({ message_id, command, args })); }
     catch (error) { clearTimeout(timer); state.pending.delete(message_id); reject(error); }
@@ -303,7 +303,7 @@ function renderPlayer() {
   const repeat=q?.repeat_mode||'off'; $('repeat').textContent=`REPEAT ${repeat.toUpperCase()}`; $('repeat').classList.toggle('active',repeat!=='off');
   const vol=state.player?.volume_level; if(Number.isFinite(vol)&&document.activeElement!==$('volume'))$('volume').value=vol;
   $('volumeValue').textContent=Number.isFinite(vol)?String(vol):'--'; $('volume').disabled=!state.player||vol==null;
-  renderProgress(); renderArtwork(current,window.radioArtworkUrl(live?.imageUrl,state.base));
+  renderProgress(); renderArtwork(current,window.radioArtworkUrl(live?.imageUrl,state.base)); listening.updatePlayer();
   const next=state.items.find(item=>item.queue_item_id!==current?.queue_item_id); $('nextTitle').textContent=next?`${trackName(next)} · ${artistName(next)}`:'Queue is empty';
 }
 function renderOutput() {
@@ -341,15 +341,15 @@ function row(item,index,kind) {
     for(const [text,shift] of [['↑',-1],['↓',1]]){const button=document.createElement('button');button.textContent=text;button.disabled=locked||index+shift<first||index+shift>=state.items.length;button.setAttribute('aria-label',`Move ${text==='↑'?'up':'down'}`);button.addEventListener('click',()=>moveItem(item,shift));buttons.append(button);}
     el.addEventListener('dblclick',()=>act('playIndex',{queue_id:state.playerId,index:item.queue_item_id||index}));
   }
-  if(buttons.childNodes.length)el.append(buttons);return el;
+  if(buttons.childNodes.length)el.append(buttons);if(kind==='queue')listening.queueRow(el,item,index);return el;
 }
 function renderList(target,items,kind,empty) {
   const node=$(target);node.replaceChildren();if(!items.length){const e=document.createElement('div');e.className='empty';e.textContent=empty;node.append(e);return;}
   const frag=document.createDocumentFragment();items.forEach((item,i)=>frag.append(row(item,i,kind)));node.append(frag);
 }
-function renderQueue(){ sessions.update(); const count=state.items.length;$('queueCount').textContent=`${count} ITEMS`;$('tabQueueCount').textContent=`(${count})`;document.querySelector('.tab[data-page="queuePage"]').setAttribute('aria-label',`Queue, ${count} ${count===1?'song':'songs'}`);renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.'); }
+function renderQueue(){ sessions.update(); const count=state.items.length;$('queueCount').textContent=`${count} ITEMS`;$('tabQueueCount').textContent=`(${count})`;document.querySelector('.tab[data-page="queuePage"]').setAttribute('aria-label',`Queue, ${count} ${count===1?'song':'songs'}`);renderList('queueList',state.items,'queue',state.connected?'The queue is empty.':'Connect to see the queue.');listening.updateQueue(); }
 async function refresh() {
-  if(state.refreshing||!state.base||!state.token)return;state.refreshing=true;
+  if(state.refreshing||!state.base||!state.token||listening.queueBusy)return;state.refreshing=true;
   let refreshPlayerId=state.playerId;
   try{
     await ensureConnection(); const [players,queues]=await Promise.all([request(commands.players),request(commands.queues)]);
@@ -359,47 +359,24 @@ async function refresh() {
     if(!state.playerId||(!state.players.some(p=>p.player_id===state.playerId)&&state.playerId!==phonePlayerId()))state.playerId=state.players.find(p=>p.available!==false)?.player_id||state.players[0]?.player_id||'';
     refreshPlayerId=state.playerId;
     const player=state.players.find(p=>p.player_id===refreshPlayerId)||null,queue=state.queues.find(q=>q.queue_id===refreshPlayerId)||null;
-    const items=queue?await request(commands.items,{queue_id:refreshPlayerId,limit:200,offset:0}):[];
+    const items=queue?await listening.queueItems(refreshPlayerId):[];
     if(state.playerId!==refreshPlayerId)return;
     state.player=player;state.queue=queue;state.items=Array.isArray(items)?items:[];
-    state.connected=true;localStorage.setItem('decksona.playerId',state.playerId);$('connection').textContent='CONNECTED';$('connection').classList.add('online');renderOutput();renderPlayer();renderQueue();
+    state.connected=true;localStorage.setItem('decksona.playerId',state.playerId);$('connection').textContent='CONNECTED';$('connection').classList.add('online');renderOutput();renderPlayer();renderQueue();listening.connected().catch(error=>say(error.message,true));
   }catch(error){state.connected=false;$('connection').textContent='RECONNECTING';$('connection').classList.remove('online');if(!document.hidden)say(error.message,true);}
   finally{state.refreshing=false;if(state.playerId!==refreshPlayerId)await refresh();}
 }
 async function act(name,args={}) {
+  if(listening.queueBusy){say('Wait for the queue edit to finish.',true);return;}
   if(!state.playerId){say('SELECT A PLAYER FIRST',true);return;}
   if(state.playerId===phonePlayerId()&&(!phoneAudio?.clientId||!state.player?.available||state.player?.needs_setup)){say('Tap Listen on this device first. If it stays unavailable, check Music Assistant player setup.',true);return;}
   try{if(state.playerId===phoneAudio?.clientId)await phoneAudio.unlock();await ensureConnection();await request(commands[name],args);await refresh();}catch(error){say(error.message,true);}
 }
-function firstMovableIndex(q){if(Number.isInteger(q?.index_in_buffer))return Math.max(q.index_in_buffer,q.current_index??-1)+1;return Math.max(0,q?.current_index??0);}
-async function moveItem(item,shift){const queues=await request(commands.queues);const q=queues.find(entry=>entry.queue_id===state.playerId);const items=await request(commands.items,{queue_id:state.playerId,limit:200,offset:0});const index=items.findIndex(entry=>entry.queue_item_id===item.queue_item_id);const first=firstMovableIndex(q);if(index<first||index+shift<first){say('ONLY UPCOMING TRACKS CAN BE REORDERED');return;}try{await request(commands.moveItem,{queue_id:state.playerId,queue_item_id:item.queue_item_id,pos_shift:shift});say('QUEUE ORDER UPDATED');}catch(error){say(error.message,true);}finally{await refresh();}}
+function firstMovableIndex(q){return window.DECKSONA_LISTENING.firstMovable(q);}
+async function moveItem(item,shift){if(listening.queueBusy)return;const queues=await request(commands.queues);const q=queues.find(entry=>entry.queue_id===state.playerId);const items=await listening.queueItems(state.playerId);const index=items.findIndex(entry=>entry.queue_item_id===item.queue_item_id);const first=firstMovableIndex(q);if(index<first||index+shift<first){say('ONLY UPCOMING TRACKS CAN BE REORDERED');return;}try{await request(commands.moveItem,{queue_id:state.playerId,queue_item_id:item.queue_item_id,pos_shift:shift});say('QUEUE ORDER UPDATED');}catch(error){say(error.message,true);}finally{await refresh();}}
 async function playMedia(item,option){if(!item.uri){say('THIS ITEM HAS NO PLAYABLE URI',true);return;}await act('playMedia',{queue_id:state.playerId,media:item.uri,option});}
-function setBrowseFilters(types){state.filters=new Set(types);document.querySelectorAll('[data-filter]').forEach(button=>button.setAttribute('aria-pressed',String(state.filters.has(button.dataset.filter))));}
-function browseNav(){ $('browseBar').hidden=!state.history.length;$('browseLabel').textContent=state.browseLabel;$('genreBrowseModes').hidden=!(genreBrowseAtRoot&&genreBrowseItem);$('genreArtists').setAttribute('aria-pressed',String(genreBrowseMode==='artists'));$('genreAlbums').setAttribute('aria-pressed',String(genreBrowseMode==='albums')); }
-function saveBrowseState(){return{items:state.results,label:state.browseLabel,filters:[...state.filters],genreBrowseItem,genreBrowseMode,genreBrowseAtRoot};}
-function genreIdFor(item){const uri=item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);const id=Number(item.item_id||uri?.[2]);return Number.isSafeInteger(id)?id:null;}
-async function loadGenreMode(mode,item=genreBrowseItem){
-  if(!item)return;const genreId=genreIdFor(item);if(genreId===null){say('THIS GENRE HAS NO LIBRARY ID',true);return;}
-  const revision=++browseRevision;const isArtists=mode==='artists';
-  try{const result=await request(isArtists?commands.genreArtists:commands.genreAlbums,isArtists?{genre:genreId}:{item_id:String(genreId)});if(revision!==browseRevision)return;
-    if(item!==genreBrowseItem)state.history.push(saveBrowseState());genreBrowseItem=item;genreBrowseMode=mode;genreBrowseAtRoot=true;setBrowseFilters([isArtists?'artist':'album']);
-    state.browseLabel=`${trackName(item)} · ${isArtists?'ARTISTS':'ALBUMS'}`;state.results=(Array.isArray(result)?result:[]).map(entry=>({...entry,media_type:entry.media_type||(isArtists?'artist':'album')}));browseNav();renderList('results',state.results,'results',isArtists?'No artists found for this genre.':'No albums found for this genre.');$('resultCount').textContent=`${state.results.length} ${isArtists?'ARTISTS':'ALBUMS'}`;
-  }catch(error){if(revision===browseRevision)say(error.message,true);}
-}
-async function browseItem(item){
-  if(item.media_type==='genre'){await loadGenreMode('artists',item);return;}
-  const isArtist=item.media_type==='artist';const uri=item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);const id=item.item_id||uri?.[2];const provider=item.provider||uri?.[1];if(!id||!provider){say('THIS RESULT HAS NO BROWSE REFERENCE',true);return;}
-  const revision=++browseRevision;
-  try{const result=await request(isArtist?commands.artistAlbums:commands.albumTracks,{item_id:String(id),provider_instance_id_or_domain:provider});if(revision!==browseRevision)return;state.history.push(saveBrowseState());genreBrowseAtRoot=false;setBrowseFilters([isArtist?'album':'track']);state.browseLabel=`${trackName(item)} · ${isArtist?'ALBUMS':'SONGS'}`;state.results=(Array.isArray(result)?result:[]).map(entry=>({...entry,media_type:entry.media_type||(isArtist?'album':'track')}));browseNav();renderList('results',state.results,'results',isArtist?'No albums found.':'No songs found.');$('resultCount').textContent=`${state.results.length}`;}
-  catch(error){if(revision===browseRevision)say(error.message,true);}
-}
-async function search(){
-  const revision=++browseRevision;const query=$('searchInput').value.trim();state.history=[];state.browseLabel='';genreBrowseItem=null;genreBrowseMode='artists';genreBrowseAtRoot=false;browseNav();
-  if(!state.filters.size){state.results=[];renderList('results',[],'results','Choose at least one search type.');return;}
-  if(!query){state.results=[];renderList('results',[],'results','Search your Music Assistant library.');$('resultCount').textContent='';return;}
-  try{const data=await request(commands.search,{search_query:query,media_types:[...state.filters],limit:30,library_only:false});if(revision!==browseRevision)return;const buckets={track:'tracks',album:'albums',playlist:'playlists',artist:'artists',genre:'genres'};state.results=[...state.filters].flatMap(type=>Array.isArray(data?.[buckets[type]])?data[buckets[type]]:[]);renderList('results',state.results,'results','No matches found.');$('resultCount').textContent=`${state.results.length} RESULTS`;}
-  catch(error){if(revision===browseRevision)say(error.message,true);}
-}
+async function search() { return listening.search(); }
+async function browseItem(item) { return listening.browse(item); }
 
 function showPage(id){document.querySelectorAll('.page').forEach(page=>page.classList.toggle('active',page.id===id));document.querySelectorAll('.tab').forEach(tab=>tab.classList.toggle('active',tab.dataset.page===id));if(id==='queuePage')refresh();}
 document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>showPage(tab.dataset.page)));
@@ -428,9 +405,6 @@ window.installRadioLibrary({
   play: station => playMedia(station, 'replace')
 });
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{const type=button.dataset.filter;if(state.filters.has(type))state.filters.delete(type);else state.filters.add(type);button.setAttribute('aria-pressed',String(state.filters.has(type)));search();}));
-$('browseBack').addEventListener('click',()=>{++browseRevision;const previous=state.history.pop();if(!previous)return;state.results=previous.items;state.browseLabel=previous.label;genreBrowseItem=previous.genreBrowseItem||null;genreBrowseMode=previous.genreBrowseMode||'artists';genreBrowseAtRoot=Boolean(previous.genreBrowseAtRoot);setBrowseFilters(previous.filters||[...state.filters]);browseNav();renderList('results',state.results,'results','No results.');$('resultCount').textContent=`${state.results.length} RESULTS`;});
-$('genreArtists').addEventListener('click',()=>loadGenreMode('artists'));
-$('genreAlbums').addEventListener('click',()=>loadGenreMode('albums'));
 $('playerSelect').addEventListener('change',async event=>{await selectSessionPlayer(event.target.value);});
 $('hideOfflinePlayers').checked=hideOfflinePlayers;
 $('hideOfflinePlayers').addEventListener('change',async event=>{hideOfflinePlayers=event.target.checked;localStorage.setItem('decksona.hideOfflinePlayers',String(hideOfflinePlayers));if(hideOfflinePlayers&&state.players.find(player=>player.player_id===state.playerId)?.available===false)await selectSessionPlayer('');renderOutput();});
@@ -452,6 +426,10 @@ function init(){
 }
 async function selectSessionPlayer(id){state.playerId=id;state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();localStorage.setItem('decksona.playerId',id);await refresh();}
 const sessions=window.createPlayerSession({state,command:(name,args)=>request(commands[name],args),select:selectSessionPlayer,refresh,notify:say,formatPlayerName:player=>player.player_id===phonePlayerId()?'This phone · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,phoneClientId(),hideOfflinePlayers)});
+const listening=window.createListeningFeatures({state,command:(name,args)=>request(commands[name],args),refresh,selectPlayer:selectSessionPlayer,notify:say,filters:()=>state.filters,image:artworkFor,
+  beforePlay:async()=>{if(state.playerId===phonePlayerId()){if(!phoneAudio?.clientId||!state.player?.available||state.player?.needs_setup)throw new Error('Tap Listen on this device first and complete player setup.');await phoneAudio.unlock();}}
+});
+$('queueList').addEventListener('decksona-render-queue',renderQueue);
 setInterval(renderProgress,1000);setInterval(()=>{if(!document.hidden)refresh();},5000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate();});

@@ -7,12 +7,6 @@ let movingQueueItem = false;
 let seeking = false;
 const searchTypes = new Set(['track', 'album', 'playlist', 'artist', 'genre']);
 let hideOfflinePlayers = localStorage.getItem('decksona.hideOfflinePlayers') === 'true';
-let searchRevision = 0;
-const browseHistory = [];
-let browseLabel = '';
-let genreBrowseItem = null;
-let genreBrowseMode = 'artists';
-let genreBrowseAtRoot = false;
 let selectedThemeId = 'phosphor-glass';
 const artworkCache = new Map();
 let localAudioState = 'connecting';
@@ -194,7 +188,6 @@ function renderPlayer() {
   $('connectionStatus').textContent = state.connected ? '● CONNECTED' : '● OFFLINE';
   $('connectionStatus').classList.toggle('online', state.connected);
   const playing = queue?.state === 'playing';
-  $('playPauseIcon').textContent = playing ? '' : '▶';
   $('playPauseIcon').classList.toggle('is-paused', playing);
   $('playPause').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   for (const id of ['rewind', 'fastForward']) $(id).disabled = !queue?.active || !duration(current);
@@ -209,6 +202,7 @@ function renderPlayer() {
   $('volumeValue').textContent = $('volume').value;
   $('volume').disabled = !state.player || volume == null;
   renderProgress();
+  listening.updatePlayer();
 }
 function renderPlayers() {
   const select = $('playerSelect');
@@ -303,6 +297,7 @@ function makeRow(item, index, kind) {
     row.addEventListener('dblclick', () => act('playIndex', { queue_id: state.playerId, index: item.queue_item_id || index }));
   }
   row.addEventListener('keydown', event => { if (event.target === row && event.key === 'Enter' && !(kind === 'results' && ['artist', 'album'].includes(item.media_type))) row.dispatchEvent(new Event('dblclick')); });
+  if (kind === 'queue') listening.queueRow(row, item, index);
   return row;
 }
 function renderList(id, items, kind, empty) {
@@ -317,9 +312,10 @@ function renderQueue() {
   sessions.update();
   $('queueCount').textContent = `${state.items.length} ITEMS`;
   renderList('queue', state.items, 'queue', state.connected ? 'The queue is empty.' : 'Your queue will appear here.');
+  listening.updateQueue();
 }
 async function refresh() {
-  if (!state.connected || state.refreshing || draggedQueueItem || movingQueueItem) return;
+  if (!state.connected || state.refreshing || draggedQueueItem || movingQueueItem || listening.queueBusy) return;
   state.refreshing = true;
   let refreshPlayerId = state.playerId;
   try {
@@ -338,15 +334,17 @@ async function refresh() {
     refreshPlayerId = state.playerId;
     const player = state.players.find(p => p.player_id === refreshPlayerId) || null;
     const queue = state.queues.find(q => q.queue_id === refreshPlayerId) || null;
-    const items = queue ? await window.retro.command('items', { queue_id: refreshPlayerId, limit: 200, offset: 0 }) : [];
+    const items = queue ? await listening.queueItems(refreshPlayerId) : [];
     if (state.playerId !== refreshPlayerId) return;
     state.player = player; state.queue = queue; state.items = Array.isArray(items) ? items : [];
     renderPlayers(); renderPlayer(); renderQueue();
+    listening.connected().catch(error => message(error.message, true));
     if ($('message').textContent === 'CONNECTING…') message('CONNECTED');
   } catch (error) { message(error.message, true); }
   finally { state.refreshing = false; if (state.playerId !== refreshPlayerId) await refresh(); }
 }
 async function act(name, args = {}) {
+  if (listening.queueBusy) { message('Wait for the queue edit to finish.', true); return; }
   if (!state.playerId) { message('Select a player first.', true); return; }
   if (state.playerId === localComputerId() && (!state.player?.available || state.player?.needs_setup)) {
     message('This computer is not ready yet. Check local audio in Connection settings.', true); return;
@@ -355,12 +353,12 @@ async function act(name, args = {}) {
   catch (error) { message(error.message, true); }
 }
 async function moveQueueItem(item, shift) {
-  if (movingQueueItem || !shift || !state.playerId) return;
+  if (movingQueueItem || listening.queueBusy || !shift || !state.playerId) return;
   movingQueueItem = true;
   try {
     const queues = await window.retro.command('queues');
     const queue = queues.find(entry => entry.queue_id === state.playerId);
-    const items = await window.retro.command('items', { queue_id: state.playerId, limit: 200, offset: 0 });
+    const items = await listening.queueItems(state.playerId);
     const index = items.findIndex(entry => entry.queue_item_id === item.queue_item_id);
     const firstMovable = firstMovableQueueIndex(queue);
     if (index < firstMovable || index + shift < firstMovable) {
@@ -373,115 +371,19 @@ async function moveQueueItem(item, shift) {
   } catch (error) { message(error.message, true); }
   finally { movingQueueItem = false; await refresh(); }
 }
-function firstMovableQueueIndex(queue) {
-  if (Number.isInteger(queue?.index_in_buffer)) {
-    return Math.max(queue.index_in_buffer, queue.current_index ?? -1) + 1;
-  }
-  return Math.max(0, queue?.current_index ?? 0);
-}
+function firstMovableQueueIndex(queue) { return window.DECKSONA_LISTENING.firstMovable(queue); }
 async function playMedia(item, option) {
   if (item.media_type === 'artist') { await browseItem(item); return; }
   if (!item.uri) { message('This item has no playable URI.', true); return; }
   await act('playMedia', { queue_id: state.playerId, media: item.uri, option });
 }
-function renderBrowseNavigation() {
-  $('browseNavigation').hidden = !browseHistory.length;
-  $('browseTitle').textContent = browseLabel;
-  $('genreBrowseModes').hidden = !(genreBrowseAtRoot && genreBrowseItem);
-  $('genreArtists').setAttribute('aria-pressed', String(genreBrowseMode === 'artists'));
-  $('genreAlbums').setAttribute('aria-pressed', String(genreBrowseMode === 'albums'));
-}
 function setSearchTypes(types) {
   searchTypes.clear();
   for (const type of types) searchTypes.add(type);
-  document.querySelectorAll('[data-search-type]').forEach(button => {
-    button.setAttribute('aria-pressed', String(searchTypes.has(button.dataset.searchType)));
-  });
+  document.querySelectorAll('[data-search-type]').forEach(button => button.setAttribute('aria-pressed', String(searchTypes.has(button.dataset.searchType))));
 }
-function saveBrowseState() {
-  return { label: browseLabel, items: state.results, searchTypes: [...searchTypes], genreBrowseItem, genreBrowseMode, genreBrowseAtRoot };
-}
-function genreIdFor(item) {
-  const uri = item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);
-  const id = Number(item.item_id || uri?.[2]);
-  return Number.isSafeInteger(id) ? id : null;
-}
-async function loadGenreMode(mode, item = genreBrowseItem) {
-  if (!item) return;
-  const genreId = genreIdFor(item);
-  if (genreId === null) { message('This genre has no library ID.', true); return; }
-  const revision = ++searchRevision;
-  const isArtists = mode === 'artists';
-  const listing = isArtists ? 'ARTISTS' : 'ALBUMS';
-  message(`LOADING ${listing} · ${title(item)}`);
-  try {
-    const data = await window.retro.command(isArtists ? 'genreArtists' : 'genreAlbums', isArtists ? { genre: genreId } : { item_id: String(genreId) });
-    if (revision !== searchRevision) return;
-    if (item !== genreBrowseItem) browseHistory.push(saveBrowseState());
-    genreBrowseItem = item;
-    genreBrowseMode = mode;
-    genreBrowseAtRoot = true;
-    setSearchTypes([isArtists ? 'artist' : 'album']);
-    browseLabel = `${title(item)} · ${listing}`;
-    const mediaType = isArtists ? 'artist' : 'album';
-    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || mediaType }));
-    renderBrowseNavigation();
-    renderList('results', state.results, 'results', isArtists ? 'No artists found for this genre.' : 'No albums found for this genre.');
-    message(`${state.results.length} ${listing}`);
-  } catch (error) { if (revision === searchRevision) message(error.message, true); }
-}
-async function browseItem(item) {
-  if (item.media_type === 'genre') { await loadGenreMode('artists', item); return; }
-  const revision = ++searchRevision;
-  const isArtist = item.media_type === 'artist';
-  const uri = item.uri?.match(/^([^:]+):\/\/[^/]+\/(.+)$/);
-  const itemId = item.item_id || uri?.[2];
-  const provider = item.provider || uri?.[1];
-  if (!itemId || !provider) { message('This item has no library or provider reference.', true); return; }
-  const listing = isArtist ? 'ALBUMS' : 'SONGS';
-  message(`LOADING ${listing} · ${title(item)}`);
-  try {
-    const data = await window.retro.command(isArtist ? 'artistAlbums' : 'albumTracks', { item_id: String(itemId), provider_instance_id_or_domain: provider });
-    if (revision !== searchRevision) return;
-    browseHistory.push(saveBrowseState());
-    genreBrowseAtRoot = false;
-    setSearchTypes([isArtist ? 'album' : 'track']);
-    browseLabel = `${title(item)} · ${listing}`;
-    const mediaType = isArtist ? 'album' : 'track';
-    state.results = (Array.isArray(data) ? data : []).map(entry => ({ ...entry, media_type: entry.media_type || mediaType }));
-    renderBrowseNavigation();
-    renderList('results', state.results, 'results', isArtist ? 'No albums found for this artist.' : 'No songs found for this album.');
-    message(`${state.results.length} ${listing}`);
-  } catch (error) { if (revision === searchRevision) message(error.message, true); }
-}
-async function search() {
-  const revision = ++searchRevision;
-  browseHistory.length = 0;
-  browseLabel = '';
-  genreBrowseItem = null;
-  genreBrowseMode = 'artists';
-  genreBrowseAtRoot = false;
-  renderBrowseNavigation();
-  const query = $('searchInput').value.trim();
-  if (!searchTypes.size) {
-    state.results = [];
-    renderList('results', [], 'results', 'Select at least one search type.');
-    message('SELECT A SEARCH TYPE');
-    return;
-  }
-  if (!query) { state.results = []; renderList('results', [], 'results', 'Search for music to begin.'); return; }
-  if (!state.connected) { message('Connect to Music Assistant first.', true); return; }
-  message(`SEARCHING · ${query}`);
-  try {
-    const types = [...searchTypes];
-    const data = await window.retro.command('search', { search_query: query, media_types: types, limit: 30, library_only: false });
-    if (revision !== searchRevision) return;
-    const buckets = { track: 'tracks', album: 'albums', playlist: 'playlists', artist: 'artists', genre: 'genres' };
-    state.results = types.flatMap(type => Array.isArray(data?.[buckets[type]]) ? data[buckets[type]] : []);
-    renderList('results', state.results, 'results', 'No matches found.');
-    message(`${state.results.length} RESULTS`);
-  } catch (error) { if (revision === searchRevision) message(error.message, true); }
-}
+async function browseItem(item) { return listening.browse(item); }
+async function search() { return listening.search(); }
 async function connect() {
   try {
     const saved = await window.retro.saveSettings({ serverUrl: $('serverUrl').value, token: $('token').value, playerId: state.playerId, localAudio: $('localAudio').checked, sendspinUrl: $('sendspinUrl').value });
@@ -546,22 +448,6 @@ if ($('radioOpen')) window.installRadioLibrary({
   command: (name, args) => window.retro.command(name, args),
   play: station => playMedia(station, 'replace')
 });
-$('browseBack').addEventListener('click', () => {
-  ++searchRevision;
-  const previous = browseHistory.pop();
-  if (!previous) return;
-  browseLabel = previous.label;
-  state.results = previous.items;
-  genreBrowseItem = previous.genreBrowseItem || null;
-  genreBrowseMode = previous.genreBrowseMode || 'artists';
-  genreBrowseAtRoot = Boolean(previous.genreBrowseAtRoot);
-  setSearchTypes(previous.searchTypes || [...searchTypes]);
-  renderBrowseNavigation();
-  renderList('results', state.results, 'results', 'No results.');
-  message(`${state.results.length} RESULTS`);
-});
-$('genreArtists').addEventListener('click', () => loadGenreMode('artists'));
-$('genreAlbums').addEventListener('click', () => loadGenreMode('albums'));
 document.querySelectorAll('[data-search-type]').forEach(button => {
   button.addEventListener('click', () => {
     const type = button.dataset.searchType;
@@ -603,6 +489,15 @@ document.addEventListener('keydown', event => {
 });
 async function selectSessionPlayer(id) { state.playerId=id; state.queue=null;state.items=[];state.player=null;renderPlayer();renderQueue();await window.retro.selectPlayer(id);await refresh(); }
 const sessions = window.createPlayerSession({state,command:(name,args)=>window.retro.command(name,args),select:selectSessionPlayer,refresh,notify:message,formatPlayerName:player=>player.player_id===localComputerId()?'This computer · Decksona':player.name,listPlayers:()=>window.DECKSONA_LOCAL_PLAYER.orderedPlayers(state.players,desktopAudio?.clientId,hideOfflinePlayers)});
+const listening = window.createListeningFeatures({
+  state, command: (name,args) => window.retro.command(name,args), refresh, selectPlayer: selectSessionPlayer,
+  notify: message, filters: () => searchTypes,
+  image: item => { const info = artworkInfo(item); return info ? window.retro.image(info) : null; },
+  beforePlay: async () => {
+    if (state.playerId === localComputerId() && (!state.player?.available || state.player?.needs_setup)) throw new Error('This computer is not ready. Check local audio in Settings.');
+  }
+});
+$('queue').addEventListener('decksona-render-queue', renderQueue);
 setInterval(renderProgress, 1000);
 setInterval(refresh, 5000);
 buildThemePicker();

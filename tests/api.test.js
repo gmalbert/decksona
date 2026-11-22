@@ -13,6 +13,7 @@ test('normalizes a direct Music Assistant server URL', () => {
 test('unpacks API results and reports server errors', () => {
   assert.deepEqual(decodeResponse({ message_id: '1', result: [{ player_id: 'desk' }] }), [{ player_id: 'desk' }]);
   assert.throws(() => decodeResponse({ error: { message: 'Access denied' } }), /Access denied/);
+  assert.throws(() => decodeResponse({ error_code: 9, details: 'Unknown command' }), /Unknown command/);
 });
 
 test('shows Music Assistant error details for HTTP failures', async () => {

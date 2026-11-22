@@ -84,7 +84,7 @@ async function command(name, args = {}) {
   if (!COMMANDS[name]) throw new Error('Unsupported command.');
   if (!settings.serverUrl || !sessionToken) throw new Error('Connect to Music Assistant first.');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks', 'genreAlbums', 'genreTracks', 'genreArtists', 'addRadio'].includes(name) ? 30000 : 12000);
+  const timeout = setTimeout(() => controller.abort(), ['artistAlbums', 'albumTracks', 'genreAlbums', 'genreTracks', 'genreArtists', 'playlistTracks', 'recommendations', 'recommendationItems', 'addRadio'].includes(name) ? 30000 : 12000);
   try {
     const response = await fetch(`${settings.serverUrl}/api`, {
       method: 'POST',
@@ -102,7 +102,7 @@ async function command(name, args = {}) {
 function createWindow() {
   playerWindow = new BrowserWindow({
     width: 930, height: 690, minWidth: 530, minHeight: 320,
-    backgroundColor: '#151a20', title: 'Decksona', icon: path.join(__dirname, 'assets', 'icon.png'),
+    backgroundColor: '#151a20', title: `Decksona ${app.getVersion()}`, icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' }
   });
   playerWindow.loadFile(path.join(__dirname, 'index.html'));
