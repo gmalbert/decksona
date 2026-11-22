@@ -120,7 +120,7 @@ The proposed native iOS/Android companion is specified in [docs/native-mobile-co
 
 ## Release versions
 
-`package.json` is the source of the release version. The desktop header, desktop connection settings, phone connection settings, and macOS DMG filename include the full version (currently **0.2.0**). Web assets, the home-screen launch URL, and update detection use that same version so releases also refresh cached files.
+`package.json` is the source of the release version. The desktop header, desktop connection settings, phone connection settings, and macOS DMG filename include the full version (currently **0.2.1**). Web assets, the home-screen launch URL, and update detection use that same version so releases also refresh cached files.
 
 Use `npm version patch --no-git-tag-version` for a small fix or `npm version minor --no-git-tag-version` for a feature release. The version lifecycle script synchronizes the app labels and web files. `npm run build:audio` also synchronizes them before launching or packaging. Bump the version when distributing a new release.
 

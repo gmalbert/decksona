@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: http: https:; connect-src ws: wss:">
   <meta name="referrer" content="no-referrer">
-  <title>Decksona 0.2.0</title>
-  <link rel="stylesheet" href="style.css?v=0.2.0">
-  <link rel="stylesheet" href="themes.css?v=0.2.0">
-  <link rel="stylesheet" href="listening.css?v=0.2.0">
+  <title>Decksona 0.2.1</title>
+  <link rel="stylesheet" href="style.css?v=0.2.1">
+  <link rel="stylesheet" href="themes.css?v=0.2.1">
+  <link rel="stylesheet" href="listening.css?v=0.2.1">
 </head>
 <body>
   <main class="shell">
     <header class="titlebar">
       <div class="brand"><img class="brand-logo" src="assets/icon.png" alt=""><span>DECK<span class="brand-light">SONA</span></span></div>
-      <span class="version">DESKTOP AUDIO SYSTEM · <span data-app-version>0.2.0</span></span>
+      <span class="version">DESKTOP AUDIO SYSTEM · <span data-app-version>0.2.1</span></span>
       <div class="header-actions"><button id="libraryToggle" class="top-button panel-toggle" aria-pressed="true">LIBRARY</button><button id="queueToggle" class="top-button panel-toggle" aria-pressed="true">QUEUE</button><button id="compactToggle" class="top-button" aria-pressed="false">COMPACT</button><button id="themesButton" class="top-button">SKINS</button><button id="settingsButton" class="top-button" aria-label="Connection settings">⚙ SETTINGS</button></div>
     </header>
 
@@ -25,7 +25,7 @@
         <div class="track-block"><div class="art-stage"><img id="nowPlayingArt" class="now-playing-art" alt="Album cover" role="button" tabindex="0" title="Toggle ultra-small player" hidden><div class="art-empty"><strong>Decksona</strong><small>YOUR LISTENING ROOM</small></div></div><div class="track-copy"><div id="trackTitle" class="track-title">NOT CONNECTED</div><div id="trackArtist" class="track-artist">Connect to your Music Assistant server</div><div class="signal"><span class="signal-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="trackMeta">MA DIGITAL AUDIO</span><button id="artworkCredit" class="artwork-credit" hidden>Photo source</button></div></div></div>
         <div class="duration-block"><span id="durationDisplay">00:00</span><small>TOTAL</small></div>
       </div>
-      <div class="seek-row"><input id="seek" type="range" min="0" max="100" value="0" aria-label="Seek position"><span id="seekPercent">0%</span></div>
+      <div class="seek-row"><input id="seek" type="range" min="0" max="100" value="0" aria-label="Seek position"><span id="seekPercent">0%</span><span class="mini-live">● LIVE</span></div>
       <div class="control-row">
         <div class="transport"><button id="previous" title="Previous track (←)" aria-label="Previous track"><span class="transport-icon">|◀</span></button><button id="rewind" title="Rewind 10 seconds (Shift+←)" aria-label="Rewind 10 seconds"><span class="transport-icon">◀◀</span></button><button id="playPause" class="primary" title="Play or pause (Space)" aria-label="Play or pause"><span id="playPauseIcon" class="transport-icon" aria-hidden="true"></span></button><button id="stop" title="Stop" aria-label="Stop"><span class="transport-icon">■</span></button><button id="fastForward" title="Fast-forward 10 seconds (Shift+→)" aria-label="Fast-forward 10 seconds"><span class="transport-icon">▶▶</span></button><button id="next" title="Next track (→)" aria-label="Next track"><span class="transport-icon">▶|</span></button></div>
         <div class="modes"><button id="shuffle" class="mode" aria-pressed="false">SHUFFLE</button><button id="repeat" class="mode" aria-label="Repeat mode">REPEAT OFF</button></div>
@@ -50,10 +50,16 @@
     <footer class="footer"><span id="message">READY</span><span>POWERED BY MUSIC ASSISTANT</span></footer>
   </main>
 
+  <main id="desktopLaunch" class="desktop-launch" hidden>
+    <h1>Open Decksona</h1>
+    <p>This page uses the Decksona desktop app. Open the app or run <code>npm start</code> from the project folder.</p>
+    <p>To use Radio and playback in a browser, run <code>npm run web</code> from the project folder, then open <a href="http://localhost:8797">localhost:8797</a>.</p>
+  </main>
+
   <dialog id="settingsDialog">
     <form id="settingsForm" method="dialog">
       <div class="dialog-title"><span>CONNECT TO MUSIC ASSISTANT</span><button id="closeSettings" type="button" aria-label="Close">✕</button></div>
-      <p>Decksona <span data-app-version>0.2.0</span></p>
+      <p>Decksona <span data-app-version>0.2.1</span></p>
       <p>Enter your server address and a long-lived access token from Music Assistant → Settings → Profile.</p>
       <label for="serverUrl">SERVER URL</label><input id="serverUrl" type="url" placeholder="http://192.168.1.100:8095" required>
       <label for="token">ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off">
@@ -85,13 +91,13 @@
     <details class="selected-theme-preview"><summary id="selectedThemeLabel">Enlarge selected preview</summary><img id="selectedThemePreview" alt="Selected player skin preview"></details>
     <div id="themeGrid" class="theme-grid"></div>
   </dialog>
-  <script src="listening-core.js?v=0.2.0"></script>
-  <script src="listening.js?v=0.2.0"></script>
-  <script src="themes.js?v=0.2.0"></script>
-  <script src="player-session.js?v=0.2.0"></script>
-  <script src="local-player.js?v=0.2.0"></script>
-  <script src="desktop-audio.bundle.js?v=0.2.0"></script>
-  <script src="web/radio.js?v=0.2.0"></script>
-  <script src="renderer.js?v=0.2.0"></script>
+  <script src="listening-core.js?v=0.2.1"></script>
+  <script src="listening.js?v=0.2.1"></script>
+  <script src="themes.js?v=0.2.1"></script>
+  <script src="player-session.js?v=0.2.1"></script>
+  <script src="local-player.js?v=0.2.1"></script>
+  <script src="desktop-audio.bundle.js?v=0.2.1"></script>
+  <script src="web/radio.js?v=0.2.1"></script>
+  <script src="renderer.js?v=0.2.1"></script>
 </body>
 </html>

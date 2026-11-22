@@ -258,7 +258,7 @@ app.whenReady().then(() => {
     if (playerWindow.isMaximized()) playerWindow.unmaximize();
     playerWindow.setMenuBarVisibility(mode !== 'mini');
     playerWindow.setMinimumSize(mode === 'mini' ? 316 : 530, mode === 'mini' ? 500 : 320);
-    if (mode === 'mini') playerWindow.setContentSize(316, 620);
+    if (mode === 'mini') playerWindow.setContentSize(316, 510);
     else if (mode === 'compact') playerWindow.setContentSize(660, 360);
     else if (expandedBounds) playerWindow.setBounds(expandedBounds);
     windowMode = mode;

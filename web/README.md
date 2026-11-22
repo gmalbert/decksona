@@ -38,11 +38,11 @@ The browser must be able to reach Music Assistant at the address you enter. Musi
 
 ## Preview from the repository
 
-For a quick preview on the computer, run `npm run web` from the repository folder and open `http://localhost:8787`. To create a complete deployment folder, run `npm run dist:web`; it builds the phone audio bundle and copies the full web edition into `dist/web/`. Copy that folder's contents into Home Assistant's `www/decksona/`. The preview server binds to all network interfaces and prints the computer's Wi-Fi address too, but Home Assistant hosting is the recommended way to keep the phone shortcut available without a computer terminal left open. Set `DECKSONA_WEB_PORT` to choose another preview port.
+For a quick preview on the computer, run `npm run web` from the repository folder and open `http://localhost:8797`. To create a complete deployment folder, run `npm run dist:web`; it builds the phone audio bundle and copies the full web edition into `dist/web/`. Copy that folder's contents into Home Assistant's `www/decksona/`. The preview server binds to all network interfaces and prints the computer's Wi-Fi address too, but Home Assistant hosting is the recommended way to keep the phone shortcut available without a computer terminal left open. Set `DECKSONA_WEB_PORT` to choose another preview port.
 
 ## Updating an existing installation
 
-Copy the updated contents of `web/` over the existing `www/decksona/` files, including **`audio.bundle.js`, `local-player.js`, `version.json`, `themes.css`, and the complete `skins/` and `skin-previews/` folders**. Home Assistant caches static files for 31 days, so an ordinary close/reopen may retain old HTML. Use the app’s **Reload** update notice, or open `index.html?v=0.2.0` to bypass an older cached page. The manifest launches this fresh URL; scripts and styles also have versioned URLs. Connection and skin preferences are kept on the same origin; clearing Safari data is unnecessary.
+Copy the updated contents of `web/` over the existing `www/decksona/` files, including **`audio.bundle.js`, `local-player.js`, `version.json`, `themes.css`, and the complete `skins/` and `skin-previews/` folders**. Home Assistant caches static files for 31 days, so an ordinary close/reopen may retain old HTML. Use the app’s **Reload** update notice, or open `index.html?v=0.2.1` to bypass an older cached page. The manifest launches this fresh URL; scripts and styles also have versioned URLs. Connection and skin preferences are kept on the same origin; clearing Safari data is unnecessary.
 
 The app checks `version.json` without caching on launch and when it becomes visible. If a newer build exists, it offers **Reload**. Checking for an update does not stop audio; choosing Reload restarts the page and requires tapping to enable phone audio again. The build synchronizes the version metadata and asset URLs from `package.json`.
 
@@ -58,4 +58,4 @@ The **Player** selector switches which device you view and control; each device 
 
 The phone edition includes the shared library home, artwork grid/list browser, collection sorting, expanded search with recent queries and provider/library scopes, complete upcoming-queue selection/removal with guarded undo, explicit play-now/next/end actions, editable library playlists, queue-to-playlist saving, listening presets, Music Assistant recommendations, and reported source-stream quality details. See the main README for behavior and compatibility limits.
 
-When updating, also copy **`listening-core.js`, `listening.js`, and `listening.css`** alongside the other files. The current web build is `0.2.0`; use `index.html?v=0.2.0` to bypass an older cached entry page.
+When updating, also copy **`listening-core.js`, `listening.js`, and `listening.css`** alongside the other files. The current web build is `0.2.1`, and `index.html?v=0.2.1` bypasses an older cached entry page.

@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const WEB_BUILD = '0.2.0';
+const WEB_BUILD = '0.2.1';
 let availableBuild = '';
 async function checkForUpdate() {
   try {

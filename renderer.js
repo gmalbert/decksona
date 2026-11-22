@@ -168,10 +168,13 @@ function currentElapsed() {
   return Math.max(0, elapsed + (queue.state === 'playing' && updated ? Math.max(0, Date.now() / 1000 - updated) : 0));
 }
 function renderProgress() {
-  const total = duration(state.queue?.current_item);
+  const current = state.queue?.current_item;
+  const live = isRadio(current);
+  const total = duration(current);
   const elapsed = Math.min(total || Infinity, currentElapsed());
+  document.querySelector('.shell').classList.toggle('live', live);
   $('timeDisplay').textContent = time(elapsed);
-  $('durationDisplay').textContent = isRadio(state.queue?.current_item) ? 'LIVE' : total ? time(total) : '--:--';
+  $('durationDisplay').textContent = live ? 'LIVE' : total ? time(total) : '--:--';
   if (!seeking) $('seek').value = total ? Math.round(elapsed / total * 100) : 0;
   $('seekPercent').textContent = `${$('seek').value}%`;
   $('seek').disabled = !total || !state.queue?.active;
@@ -399,6 +402,11 @@ async function connect() {
 }
 
 async function init() {
+  if (!window.retro?.command) {
+    document.querySelector('.shell').hidden = true;
+    $('desktopLaunch').hidden = false;
+    return;
+  }
   const saved = await window.retro.getSettings();
   applyTheme(saved.themeId);
   state.connected = Boolean(saved.serverUrl && saved.hasToken);
