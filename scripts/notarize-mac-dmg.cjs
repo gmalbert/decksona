@@ -7,15 +7,26 @@ const { promisify } = require('node:util');
 const run = promisify(execFile);
 const developerIdRequirement = 'anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] exists';
 
+function notaryCredentials() {
+  const { APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_KEYCHAIN_PROFILE, APPLE_KEYCHAIN } = process.env;
+  if (APPLE_ID || APPLE_TEAM_ID || APPLE_APP_SPECIFIC_PASSWORD) {
+    if (!APPLE_ID || !APPLE_TEAM_ID || !APPLE_APP_SPECIFIC_PASSWORD) {
+      throw new Error('Set APPLE_ID, APPLE_TEAM_ID, and APPLE_APP_SPECIFIC_PASSWORD together.');
+    }
+    return ['--apple-id', APPLE_ID, '--team-id', APPLE_TEAM_ID, '--password', APPLE_APP_SPECIFIC_PASSWORD];
+  }
+  const credentials = ['--keychain-profile', APPLE_KEYCHAIN_PROFILE || 'decksona-notary'];
+  if (APPLE_KEYCHAIN) credentials.push('--keychain', APPLE_KEYCHAIN);
+  return credentials;
+}
+
 module.exports = async ({ file }) => {
   if (!file || path.extname(file) !== '.dmg') return;
 
+  const credentials = notaryCredentials();
   const pendingDir = await mkdtemp(path.join(path.dirname(file), '.notarization-'));
   const pendingDmg = path.join(pendingDir, path.basename(file));
   await rename(file, pendingDmg);
-
-  const credentials = ['--keychain-profile', process.env.APPLE_KEYCHAIN_PROFILE || 'decksona-notary'];
-  if (process.env.APPLE_KEYCHAIN) credentials.push('--keychain', process.env.APPLE_KEYCHAIN);
 
   try {
     await run('codesign', ['--verify', '--strict', `-R=${developerIdRequirement}`, pendingDmg]);
@@ -41,7 +52,9 @@ module.exports = async ({ file }) => {
     await run('spctl', ['--assess', '--type', 'open', '--context', 'context:primary-signature', pendingDmg]);
   } catch (error) {
     const detail = error.stderr?.trim() || error.stdout?.trim() || error.message;
-    throw new Error(`The macOS release DMG is pending at ${pendingDmg}. ${detail}`, { cause: error });
+    const password = process.env.APPLE_APP_SPECIFIC_PASSWORD;
+    const safeDetail = password ? detail.replaceAll(password, '[redacted]') : detail;
+    throw new Error(`The macOS release DMG is pending at ${pendingDmg}. ${safeDetail}`);
   }
 
   await rename(pendingDmg, file);

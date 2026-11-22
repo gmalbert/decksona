@@ -17,7 +17,7 @@ For a standalone Windows executable that does not need installation, run `npm ru
 
 ### Install the macOS download
 
-The standard Decksona Mac download is ad hoc signed and has no Apple notarization. macOS may ask you to approve it the first time you open it.
+New GitHub releases use Developer ID signing and Apple notarization. If you upgrade from an ad hoc build with a saved token, macOS may ask once to grant the signed app access to **Decksona Safe Storage**.
 
 1. Download the DMG from [Decksona’s GitHub Releases](https://github.com/gmalbert/decksona/releases), open it, and drag **Decksona** into **Applications**.
 2. Open **Decksona** from **Applications** once. If macOS blocks it, dismiss the alert.
@@ -124,6 +124,22 @@ The proposed native iOS/Android companion is specified in [docs/native-mobile-co
 
 Use `npm version patch --no-git-tag-version` for a small fix or `npm version minor --no-git-tag-version` for a feature release. The version lifecycle script synchronizes the app labels and web files. `npm run build:audio` also synchronizes them before launching or packaging. Bump the version when distributing a new release.
 
-Pushing a `v*` tag runs the GitHub Actions release workflow. It builds the Windows executable and the standard ad hoc–signed macOS DMG, then attaches both to the GitHub release. New release notes include the macOS first-launch instructions. For a local copy of the release DMG, run `npm run dist:mac` and look in `dist/mac/`.
+Pushing a `v*` tag runs the GitHub Actions release workflow. It builds the Windows executable, signs and notarizes the macOS DMG, then attaches both to the GitHub release. You can also run **Build and publish release** manually in GitHub Actions to verify the build without creating a release.
+
+### One-time GitHub signing setup
+
+Export the **Developer ID Application** signing identity with its private key as a password-protected `.p12` from Keychain Access. Create a dedicated [app-specific password](https://support.apple.com/en-us/102654) for the Apple Account used for notarization. Find its Team ID on the [Apple Developer account page](https://developer.apple.com/account/).
+
+Add these repository secrets under **Settings → Secrets and variables → Actions**.
+
+| Secret | Value |
+| --- | --- |
+| `MAC_CSC_LINK` | Base64 of the `.p12` file |
+| `MAC_CSC_KEY_PASSWORD` | Password used to export the `.p12` |
+| `APPLE_ID` | Apple Account email used for notarization |
+| `APPLE_TEAM_ID` | Developer Team ID for the signing certificate |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password generated for the release workflow |
+
+On macOS, pipe `base64 -i path/to/certificate.p12` directly to `gh secret set MAC_CSC_LINK`. To enter a password, run `gh secret set SECRET_NAME` and use its prompt. After the initial setup, the same secrets are reused on each version tag.
 
 To build a notarized DMG, use `npm run dist:mac:notarized`. This requires a Developer ID Application signing identity and a [notarytool keychain profile](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow) named `decksona-notary`. Set `APPLE_KEYCHAIN_PROFILE` if your profile has a different name. The verified DMG appears in `dist/` after Apple accepts it.
