@@ -1,3 +1,5 @@
+require('./sync-version.cjs');
+for (const file of ['listening-core.js', 'listening.js', 'listening.css']) require('node:fs').copyFileSync(file, `web/${file}`);
 const { buildSync } = require('esbuild');
 require('node:fs').copyFileSync('local-player.js', 'web/local-player.js');
 require('node:fs').copyFileSync('player-session.js', 'web/player-session.js');

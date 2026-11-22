@@ -1,4 +1,5 @@
 const COMMANDS = Object.freeze({
+  ...require('./listening-core').commands,
   players: 'players/all', queues: 'player_queues/all', items: 'player_queues/items',
   search: 'music/search', playPause: 'player_queues/play_pause',
   radioStations: 'music/radios/library_items', addRadio: 'builtin/add_radio',

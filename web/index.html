@@ -7,12 +7,13 @@
   <meta name="description" content="A pocket-sized Decksona player for Music Assistant.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest?v=radio-5">
+  <link rel="manifest" href="manifest.webmanifest?v=0.2.0">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=radio-1">
-  <link rel="stylesheet" href="themes.css">
-  <title>Decksona</title>
+  <link rel="stylesheet" href="style.css?v=0.2.0">
+  <link rel="stylesheet" href="themes.css?v=0.2.0">
+  <title>Decksona 0.2.0</title>
+  <link rel="stylesheet" href="listening.css?v=0.2.0">
 </head>
 <body>
   <header class="topbar">
@@ -76,7 +77,7 @@
 
     <section id="queuePage" class="page" aria-label="Playlist queue">
       <section class="panel queue-panel">
-        <div class="panel-heading"><h1>PLAYLIST</h1><span id="queueCount">0 ITEMS</span></div>
+        <div class="panel-heading"><h1>QUEUE</h1><span id="queueCount">0 ITEMS</span></div>
         <div class="eyebrow queue-subhead"><span>UP NEXT</span><span>TIME</span></div>
         <div id="queueList" class="list"><div class="empty">Connect to see the queue.</div></div>
       </section>
@@ -94,7 +95,7 @@
 
   <dialog id="settingsDialog">
     <form id="settingsForm">
-      <div class="dialog-heading"><div><span class="eyebrow">DECKSONA · MOBILE</span><h2>Connection</h2></div><button type="button" id="settingsClose" class="icon-button" aria-label="Close settings">×</button></div>
+      <div class="dialog-heading"><div><span class="eyebrow">DECKSONA · MOBILE · <span data-app-version>0.2.0</span></span><h2>Connection</h2></div><button type="button" id="settingsClose" class="icon-button" aria-label="Close settings">×</button></div>
       <label for="serverUrl">MUSIC ASSISTANT SERVER</label><input id="serverUrl" type="url" placeholder="https://music.example.com" required autocomplete="url">
       <p class="help">Enter the full server address, including its port (often <code>:8096</code>), without /api or /ws. Use it while your phone is on the same home Wi-Fi.</p>
       <label for="token">LONG-LIVED ACCESS TOKEN</label><input id="token" type="password" placeholder="Paste token" autocomplete="off" required>
@@ -133,11 +134,13 @@
     <div id="themeGrid" class="theme-grid"></div>
   </dialog>
 
-  <script src="themes.js"></script>
-  <script src="player-session.js?v=phone-fix-5"></script>
-  <script src="local-player.js?v=phone-fix-5"></script>
-  <script src="audio.bundle.js?v=phone-fix-5"></script>
-  <script src="radio.js?v=radio-3"></script>
-  <script src="app.js?v=radio-5"></script>
+  <script src="listening-core.js?v=0.2.0"></script>
+  <script src="listening.js?v=0.2.0"></script>
+  <script src="themes.js?v=0.2.0"></script>
+  <script src="player-session.js?v=0.2.0"></script>
+  <script src="local-player.js?v=0.2.0"></script>
+  <script src="audio.bundle.js?v=0.2.0"></script>
+  <script src="radio.js?v=0.2.0"></script>
+  <script src="app.js?v=0.2.0"></script>
 </body>
 </html>

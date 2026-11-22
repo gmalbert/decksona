@@ -13,9 +13,17 @@ npm install
 npm start
 ```
 
-For a standalone Windows executable that does not need installation, run `npm run dist:win` on Windows. Copy the generated `Decksona.exe` from `dist/` anywhere and launch it; each build overwrites that filename. To build the optional Windows installer, run `npm run dist:win:installer`. For a macOS DMG, run `npm run dist:mac` on a Mac. Builds are written to `dist/`. macOS distribution to other users requires Apple code signing and notarization; local development does not.
+For a standalone Windows executable that does not need installation, run `npm run dist:win` on Windows. Copy the generated `Decksona.exe` from `dist/` anywhere and launch it; each build overwrites that filename. To build the optional Windows installer, run `npm run dist:win:installer`. For a macOS DMG to test on your Mac, run `npm run dist:mac:local`. Local DMGs use ad hoc signing and are written to `dist/local/`.
 
-To publish prebuilt downloads, push a version tag such as `v0.1.0`. GitHub Actions builds the Windows executable and macOS DMG, then attaches them to a GitHub Release for that tag. Generated executables are kept out of normal Git commits.
+### Install the macOS download
+
+The standard Decksona Mac download is ad hoc signed and has no Apple notarization. macOS may ask you to approve it the first time you open it.
+
+1. Download the DMG from [Decksona’s GitHub Releases](https://github.com/gmalbert/decksona/releases), open it, and drag **Decksona** into **Applications**.
+2. Open **Decksona** from **Applications** once. If macOS blocks it, dismiss the alert.
+3. Open **System Settings → Privacy & Security**, scroll to **Security**, and click **Open Anyway** for Decksona. Confirm when prompted. Use this option for a download you trust. [Apple’s instructions](https://support.apple.com/en-us/102445)
+
+The v0.1.0 Mac download has an invalid bundle signature. If you have that build, use a newer DMG or run from source using the commands above. If your Mac doesn’t offer **Open Anyway**, you can run from source or use the web edition.
 
 ## iPhone and Android web app
 
@@ -26,9 +34,9 @@ The repository's [`web/`](web/README.md) folder contains a phone-sized version t
 1. Open Music Assistant directly at `http://YOUR_SERVER_IP:8095` (port **8095** by default), or use its HTTPS URL. This must be the Music Assistant server address; a Home Assistant ingress URL is not a direct API address.
 2. In **Music Assistant**, open **Settings → Profile** and create a long-lived access token. This is a Music Assistant token, not a Home Assistant token.
 3. Start Decksona and enter the direct Music Assistant server URL and its token.
-4. Pick an output in the top player deck. Double-click search results to replace the queue and play, or click **+** to add one.
+4. Pick an output in the top player deck. Use **Play now** to replace the queue and play, **Next** to insert next, or **+** to add to the end.
 
-Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an artist to browse albums, an album to see its songs, or a genre to browse its artists and albums. Choose Artists or Albums in the genre view; selecting an artist opens their albums, and selecting an album opens its songs. Back returns to the previous list. Double-click a song to play it, or use + to add a song, album, or playlist to the queue. Artist and genre rows browse their contents instead of starting playback.
+Search filters toggle Tracks, Albums, Playlists, Artists, and Genres. Click an artist to browse albums, an album to see its songs, or a genre to browse its artists and albums. Choose Artists or Albums in the genre view; selecting an artist opens their albums, and selecting an album opens its songs. Back returns to the previous list. Use a song’s play button to start playback, **Next** to insert next, or **+** to add a song, album, or playlist to the queue. Artist and genre rows browse their contents instead of starting playback.
 
 The app stores the token encrypted through Electron's operating-system secure storage when available. Otherwise it keeps the token only until the app closes.
 
@@ -48,11 +56,11 @@ On servers that require approval, complete **Setup required** for the new Deckso
 
 Closing the desktop window keeps Decksona and its audio running in the system tray (menu bar on macOS). Click the Decksona tray icon to reopen it, or choose **Quit Decksona** to stop playback and exit. If your system cannot create a tray icon, closing the window exits normally on Windows. Switching the player selector to another output changes which queue you control; use **Move music…** to transfer an existing session to this computer.
 
-`npm start` and desktop packaging commands build the bundled audio libraries automatically. The phone/web edition also includes an independent player. Tap **Listen on this device**, then play music through **This phone · Decksona**. See the [phone setup and browser limitations](web/README.md).
+`npm start` and desktop packaging commands build the bundled audio libraries automatically. The phone/web edition also includes an independent player: tap **Listen on this device**, then play music through **This phone · Decksona**. See the [phone setup and browser limitations](web/README.md).
 
 ### Listen on this device
 
-**Listen on this device** turns the device running the web app into a Music Assistant audio output, using its speaker, headphones, or connected Bluetooth audio device. Tap it once after opening the web app to enable phone audio and register/select **This phone · Decksona**. Then choose music in Library and play it, or use **Move music…** to transfer the current session to the phone. Browsers require a user tap to activate audio, especially on iPhone, so the same control can resume audio after reopening or interruption. See [phone setup and browser limitations](web/README.md).
+**Listen on this device** turns the phone running Decksona into a Music Assistant audio output, using its speaker, headphones, or connected Bluetooth audio device. Tap it once after opening the web app to enable phone audio and register/select **This phone · Decksona**. Then choose music in Library and play it, or use **Move music…** to transfer the current session to the phone. The button only prepares the phone as a player; it does not start a song. Browsers require a user tap to activate audio, especially on iPhone, so the same control can resume audio after reopening or interruption. See [phone setup and browser limitations](web/README.md).
 
 For the optional desktop audio integration check, install its isolated Python fixtures with `python -m pip install --target output/audio-test-python aiosendspin==10.3.0 av==19.0.2`, then run `npm run check:audio`. It starts loopback-only servers, uses a separate Electron profile, and verifies encrypted lossless audio decoding/scheduling, local output selection, background playback, identity persistence, and cleanup. Test audio is not connected to physical speakers. Results are written to `output/audio-report.json`.
 
@@ -89,3 +97,33 @@ The skin gallery uses screenshots of the actual player, including sample album a
 Player lists pin **This computer · Decksona** first, followed by available players alphabetically and offline players alphabetically at the bottom. Turn on **Hide offline** beside the player selector to remove offline players from the list; the preference is saved on this device. The **Move music…** destination list uses the same order and excludes the source and offline players. Sorting changes only the displayed list; it does not change the selected queue or playback.
 
 The **Player** selector switches which device you view and control; each device keeps its own queue. The queue shows its player name and track count. To continue the same listening session on another device, choose **Move music…**, select a destination, and press **Move music here**. This transfers the queue and current track position, replacing the destination queue. Playing music continues; paused music stays paused. Unavailable players are excluded.
+
+## Library, playlists, and listening presets
+
+The Library now opens on **Home**, with recently added albums and your playlists. Browse **Albums**, **Artists**, **Tracks**, **Playlists**, and **Genres** without searching; switch between grid and list layouts, sort by name or date added, and load additional library items. Genre pages offer both artists and albums.
+
+Search updates as you type. Recent searches are saved on this device per server; **Clear history** removes them. **Library only** restricts results to your library, and the provider selector restricts a wider search to one music source. **Load more** expands results per selected media type. Explicit **Play now**, **Next**, and **+** actions replace/start playback, insert next, and append respectively. The **•••** menu also offers playlist and preset actions.
+
+The queue supports selecting and removing upcoming tracks, **Clear upcoming**, and **Undo removal**. Played, playing, and buffered tracks remain locked. Removal rechecks the server's buffer before each change. Undo is limited to the most recent removal in this app session and refuses to restore when the queue or playback has changed; it does not restart the current track. Large queues load in pages rather than stopping at 200 tracks.
+
+Browse playlist songs, create a new Music Assistant playlist, add songs or albums to an editable library playlist, and save the queue as a new playlist. Editable, nondynamic library playlists offer removal and reordering using provider positions. Other playlists remain read-only and offer **Save a copy**. Playlist permissions, supported operations, and command availability depend on the connected Music Assistant version and provider; failed operations are shown rather than reported as successful. Some servers perform playlist updates as background tasks, whose completion Decksona checks before reporting success.
+
+Save a **listening preset** from a track, album, or playlist's **•••** menu. Give it a name and choose its output, volume, and shuffle setting, then launch it from **Presets**. Playing a preset replaces the destination queue. Presets stay on this device and are separated by server; unavailable outputs produce an error instead of playing elsewhere.
+
+**Discover** browses Music Assistant's recommendation rows, including enabled library and provider recommendations. Open a row to load its items; no separate recommendation service is used. Enable a recommendations provider in Music Assistant if none are available.
+
+Expand **Audio quality** in the player to see the current item's reported stream provider, codec, sample rate, bit depth, and bitrate when supplied by the server. These describe the source stream; they do not establish the final device output format after transcoding or operating-system processing. Unknown values remain unavailable rather than being inferred from other versions of the track.
+
+Both desktop and phone editions share these features. Run `npm run check:listening` for simulated desktop/phone integration checks covering browsing, queue removal and guarded undo, playlist edits/export, presets, search races and scopes, recommendations, audio metadata, and responsive layouts. It does not contact real players. Screenshots are written to `output/listening-previews/`.
+
+The proposed native iOS/Android companion is specified in [docs/native-mobile-companion.md](docs/native-mobile-companion.md).
+
+## Release versions
+
+`package.json` is the source of the release version. The desktop header, desktop connection settings, phone connection settings, and macOS DMG filename include the full version (currently **0.2.0**). Web assets, the home-screen launch URL, and update detection use that same version so releases also refresh cached files.
+
+Use `npm version patch --no-git-tag-version` for a small fix or `npm version minor --no-git-tag-version` for a feature release. The version lifecycle script synchronizes the app labels and web files. `npm run build:audio` also synchronizes them before launching or packaging. Bump the version when distributing a new release.
+
+Pushing a `v*` tag runs the GitHub Actions release workflow. It builds the Windows executable and the standard ad hoc–signed macOS DMG, then attaches both to the GitHub release. New release notes include the macOS first-launch instructions. For a local copy of the release DMG, run `npm run dist:mac` and look in `dist/mac/`.
+
+To build a notarized DMG, use `npm run dist:mac:notarized`. This requires a Developer ID Application signing identity and a [notarytool keychain profile](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow) named `decksona-notary`. Set `APPLE_KEYCHAIN_PROFILE` if your profile has a different name. The verified DMG appears in `dist/` after Apple accepts it.

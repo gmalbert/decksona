@@ -1,6 +1,6 @@
 {
   "name": "decksona",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "main": "main.js",
   "scripts": {
@@ -14,16 +14,23 @@
     "predist:win": "npm run build:audio",
     "predist:win:installer": "npm run build:audio",
     "predist:mac": "npm run build:audio",
+    "predist:mac:local": "npm run build:audio",
+    "predist:mac:notarized": "npm run build:audio",
     "start": "electron .",
     "web": "node web/server.js",
     "preweb": "npm run build:audio",
     "sync:skins": "node scripts/build-skins.js",
     "check:skins": "electron scripts/verify-skins.cjs",
     "preview:skins": "electron scripts/verify-skins.cjs --generate-previews",
-    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check web/radio.js && node --check themes.js && node --test tests/*.test.js",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check web/app.js && node --check web/radio.js && node --check themes.js && node --check listening.js && node --check listening-core.js && node --test tests/*.test.js",
     "dist:win": "electron-builder --win portable --publish never",
     "dist:win:installer": "electron-builder --win nsis",
-    "dist:mac": "electron-builder --mac dmg --publish never"
+    "dist:mac": "electron-builder --mac dmg --publish never -c.mac.identity=- -c.mac.hardenedRuntime=false -c.mac.notarize=false -c.afterSign=./scripts/verify-mac-release.cjs -c.directories.output=dist/mac",
+    "dist:mac:local": "electron-builder --mac dmg --publish never -c.mac.identity=- -c.mac.hardenedRuntime=false -c.mac.notarize=false -c.directories.output=dist/local",
+    "dist:mac:notarized": "electron-builder --mac dmg --publish never -c.mac.forceCodeSigning=true -c.mac.type=distribution -c.mac.notarize=false -c.dmg.sign=true -c.dmg.writeUpdateInfo=false -c.afterSign=./scripts/verify-mac-release.cjs -c.artifactBuildCompleted=./scripts/notarize-mac-dmg.cjs",
+    "check:listening": "npm run build:audio && electron scripts/verify-listening.cjs",
+    "sync:version": "node scripts/sync-version.cjs",
+    "version": "npm run sync:version"
   },
   "devDependencies": {
     "electron": "45.3.4",
@@ -49,7 +56,10 @@
       "themes.css",
       "skins/**",
       "skin-previews/**",
-      "assets/**"
+      "assets/**",
+      "listening-core.js",
+      "listening.js",
+      "listening.css"
     ],
     "win": {
       "artifactName": "Decksona.exe",

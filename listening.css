@@ -1,0 +1,44 @@
+/* Shared additions inherit every listening room's colors. */
+.listening-nav,.listening-options,.listening-context,.recent-searches,.queue-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;flex:none;min-width:0}
+.listening-nav{border-bottom:1px solid var(--skin-border,var(--border));gap:4px}
+.listening-nav button,.listening-options button,.listening-context button,.recent-searches button,.queue-tools button,.music-card button,.preset-card button,#libraryMore,.listening-dialog button{border:1px solid var(--skin-border,var(--border));background:var(--skin-screen,var(--screen));color:var(--skin-accent,var(--accent));padding:6px 9px;min-height:30px;cursor:pointer;font:inherit;font-size:11px}
+.listening-nav button[aria-current="page"],#libraryGrid[aria-pressed="true"]{box-shadow:inset 0 -2px currentColor}
+.listening-options select,.listening-dialog select,.listening-dialog input:not([type="checkbox"]){min-width:0;max-width:100%;background:var(--skin-screen,var(--screen));color:var(--skin-accent,var(--accent));border:1px solid var(--skin-border,var(--border));padding:7px}
+.listening-options select{flex:1;max-width:180px;font-size:11px}
+.listening-options label{display:flex;align-items:center;gap:4px;font-size:11px}
+.listening-context{border-bottom:1px solid var(--skin-border,var(--border));color:var(--skin-accent,var(--accent))}
+.listening-context strong{flex:1;min-width:80px;font-size:12px;overflow-wrap:anywhere}
+.listening-context small{flex-basis:100%;font-size:11px}
+.recent-searches{padding-block:2px}.recent-searches:empty{display:none}.recent-searches button{font-size:10px;min-height:25px}
+.listening-status{margin:0;padding:5px 10px;flex:none;font-size:12px;overflow-wrap:anywhere}.listening-status:empty{display:none}
+#libraryMore{flex:none;margin:6px 10px}
+#results.music-grid,.music-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;padding:10px;align-content:start}
+.music-card{min-width:0;border-bottom:1px solid var(--skin-border,var(--border));padding:8px;display:flex;align-items:center;gap:8px}
+.music-card-content{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;border:0!important;background:transparent!important;padding:0!important}
+.music-card-copy{display:flex;flex-direction:column;gap:4px;min-width:0}.music-card-copy strong,.music-card-copy small{overflow-wrap:anywhere;font-size:12px}.music-card-copy small{font-size:10px;opacity:.8}
+.music-card img{width:48px;height:48px;object-fit:cover;flex:none}.music-card img[hidden]{display:none}
+.music-card-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:none;max-width:48%}
+.music-card-actions button{padding:5px 7px;font-size:10px}
+.music-grid>.music-card{display:flex;flex-direction:column;align-items:stretch;border:1px solid var(--skin-border,var(--border));background:var(--skin-screen,var(--screen));gap:10px}
+.music-grid .music-card-content{flex-direction:column;align-items:stretch}.music-grid .music-card img{width:100%;height:auto;aspect-ratio:1}.music-grid .music-card-actions{max-width:100%;justify-content:flex-start}
+.music-section h3{margin:12px 10px 4px;font-size:13px;color:var(--skin-accent,var(--accent))}.music-section>p{padding:10px;font-size:12px}
+.preset-card{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px;border-bottom:1px solid var(--skin-border,var(--border));color:var(--skin-accent,var(--accent))}.preset-card strong{flex:1}.preset-card small{flex-basis:100%;overflow-wrap:anywhere}
+.queue-tools button:disabled,.queue-remove:disabled,.listening-dialog button:disabled{opacity:.4;cursor:default}
+.queue-select{width:16px!important;height:16px!important;flex:none;margin:0;accent-color:var(--skin-accent,var(--accent))}
+.queue-remove{width:26px;height:28px;flex:none;padding:0;border:1px solid var(--skin-border,var(--border));background:var(--skin-screen,var(--screen));color:var(--skin-accent,var(--accent));cursor:pointer}
+.list-row.editable-queue-row{grid-template-columns:16px 20px minmax(0,1fr) max-content max-content 26px;gap:5px}
+.audio-quality{margin-top:8px;color:var(--skin-accent,var(--accent));font-size:10px}.audio-quality summary{cursor:pointer}.audio-quality p{margin:6px 0;overflow-wrap:anywhere}
+.shell.mini .audio-quality,.shell.compact .audio-quality{display:none}
+.listening-dialog{padding:18px;width:min(480px,calc(100vw - 24px));max-height:85dvh;overflow:auto;background:var(--skin-panel,var(--panel));color:var(--skin-accent,var(--accent));border:1px solid var(--skin-border,var(--border))}
+.listening-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.listening-dialog h2{margin:0;font-size:18px;overflow-wrap:anywhere}.listening-dialog-content{display:flex;flex-direction:column;gap:10px}.listening-dialog-content>button{text-align:left;min-height:40px}.listening-dialog form{display:flex;flex-direction:column;gap:14px;padding:0}.listening-dialog label{display:flex;flex-direction:column;gap:6px;font-size:12px}
+@media(max-width:480px){.listening-nav{flex-wrap:nowrap;overflow:auto}.listening-nav button{flex:none;min-height:36px}.listening-options{gap:5px}.listening-options select{font-size:12px;max-width:125px}.listening-options label{font-size:10px}.listening-options input[type="checkbox"]{width:16px;height:16px}.music-card-actions button{min-height:36px;min-width:32px}.listening-dialog input:not([type="checkbox"]),.listening-dialog select{font-size:16px}.queue-tools button{font-size:10px;min-height:32px}.list-row.editable-queue-row .row-index,.list-row.editable-queue-row .row-time{display:none}.list-row.editable-queue-row{grid-template-columns:16px minmax(0,1fr) max-content 26px}.editable-queue-row .row-buttons button{width:30px!important;height:36px!important}.library-panel{min-height:460px}}
+.queue-editing .queue-reorder,.queue-editing .row-buttons,.queue-editing .queue-select,.queue-editing .queue-remove{pointer-events:none;opacity:.4}
+.listening-options [hidden],.recent-searches[hidden]{display:none!important}
+.listening-library:not([data-listening-view="search"]) .filters,.listening-library:not([data-listening-view="search"]) .search-filters{display:none}
+html[data-edition="desktop"] .listening-nav{flex-wrap:nowrap;overflow-x:auto;padding-block:5px;gap:4px}
+html[data-edition="desktop"] .listening-nav button{flex:none;min-height:26px;padding:4px 7px;font-size:10px}
+html[data-edition="desktop"] .listening-options{padding-block:4px}
+html[data-edition="desktop"] .listening-context{padding-block:4px}
+html[data-edition="desktop"] .shell:not(.compact):not(.mini) .workspace{min-height:330px}
+html[data-edition="desktop"] .shell:not(.compact):not(.mini){height:auto;min-height:100vh}
+html[data-edition="desktop"] .shell:not(.compact):not(.mini) .workspace .panel{max-height:65vh;min-height:330px}
